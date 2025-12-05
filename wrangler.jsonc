@@ -7,6 +7,7 @@
   
   // Environment variables (set via wrangler secret for sensitive values)
   "vars": {
+    "BACKEND_API_URL": "https://entity-validator-backend-production.up.railway.app",
     "ENVIRONMENT": "production"
   }
 }
