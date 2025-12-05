@@ -82,7 +82,7 @@ app.post('/api/batch/upload', async (c) => {
   backendFormData.append('file', file)
   
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL}/batch-upload`, {
+    const response = await fetch(`${c.env.BACKEND_API_URL}/api/batch/upload`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
