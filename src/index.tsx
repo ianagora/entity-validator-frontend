@@ -131,6 +131,24 @@ app.get('/api/batches', async (c) => {
   }
 })
 
+// Get item details
+app.get('/api/item/:id', async (c) => {
+  const itemId = c.req.param('id')
+  
+  try {
+    const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}`, {
+      headers: {
+        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
+      }
+    })
+    
+    const data = await response.json()
+    return c.json(data, response.status)
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch item details', details: String(error) }, 500)
+  }
+})
+
 // Get batch items
 app.get('/api/batch/:id/items', async (c) => {
   const batchId = c.req.param('id')
@@ -471,6 +489,280 @@ app.get('/', (c) => {
 })
 
 // Batch detail page
+// Item detail page
+app.get('/item/:id', async (c) => {
+  const itemId = c.req.param('id')
+  
+  return c.html(/* html */`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Entity Details - Entity Validator</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+          .card { background: white; border-radius: 0.5rem; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
+          .section-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: #1f2937; }
+          .field-label { font-weight: 600; color: #6b7280; margin-right: 0.5rem; }
+          .field-value { color: #111827; }
+          .badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 600; }
+          .badge-success { background: #dcfce7; color: #166534; }
+          .badge-warning { background: #fef3c7; color: #92400e; }
+          .badge-info { background: #dbeafe; color: #1e40af; }
+          .tree { font-family: monospace; white-space: pre; padding: 1rem; background: #f9fafb; border-radius: 0.5rem; }
+        </style>
+    </head>
+    <body class="bg-gray-50">
+        <div class="container mx-auto px-4 py-8 max-w-7xl">
+            <div class="mb-6">
+                <a href="javascript:history.back()" class="text-blue-600 hover:text-blue-800 font-medium">
+                    <i class="fas fa-arrow-left mr-2"></i>Back
+                </a>
+            </div>
+
+            <div id="loading" class="text-center py-8">
+                <i class="fas fa-spinner fa-spin text-4xl text-blue-600"></i>
+                <p class="mt-4 text-gray-600">Loading entity details...</p>
+            </div>
+
+            <div id="content" class="hidden"></div>
+            <div id="error" class="hidden card">
+                <p class="text-red-600"></p>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script>
+          async function loadItemDetails() {
+            try {
+              const response = await axios.get('/api/item/${itemId}');
+              const item = response.data;
+              
+              document.getElementById('loading').classList.add('hidden');
+              document.getElementById('content').classList.remove('hidden');
+              
+              // Build shareholders tree
+              let shareholderTree = '';
+              if (item.shareholders && item.shareholders.length > 0) {
+                shareholderTree = buildOwnershipTree(item.shareholders);
+              }
+              
+              document.getElementById('content').innerHTML = \`
+                <!-- Header -->
+                <div class="card">
+                  <h1 class="text-3xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-building text-blue-600 mr-3"></i>
+                    \${item.input_name}
+                  </h1>
+                  <div class="flex gap-4 flex-wrap">
+                    <span class="badge \${item.enrich_status === 'done' ? 'badge-success' : 'badge-warning'}">
+                      <i class="fas fa-\${item.enrich_status === 'done' ? 'check-circle' : 'clock'} mr-1"></i>
+                      \${item.enrich_status || 'pending'}
+                    </span>
+                    <span class="badge badge-info">
+                      <i class="fas fa-landmark mr-1"></i>
+                      \${item.resolved_registry || 'N/A'}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Company Profile -->
+                \${item.profile && Object.keys(item.profile).length > 0 ? \`
+                <div class="card">
+                  <h2 class="section-title"><i class="fas fa-id-card mr-2"></i>Company Profile</h2>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    \${item.company_number ? \`<div><span class="field-label">Company Number:</span><span class="field-value">\${item.company_number}</span></div>\` : ''}
+                    \${item.profile.company_name ? \`<div><span class="field-label">Company Name:</span><span class="field-value">\${item.profile.company_name}</span></div>\` : ''}
+                    \${item.profile.company_status ? \`<div><span class="field-label">Status:</span><span class="field-value">\${item.profile.company_status}</span></div>\` : ''}
+                    \${item.profile.company_type ? \`<div><span class="field-label">Type:</span><span class="field-value">\${item.profile.company_type}</span></div>\` : ''}
+                    \${item.profile.date_of_creation ? \`<div><span class="field-label">Incorporated:</span><span class="field-value">\${item.profile.date_of_creation}</span></div>\` : ''}
+                    \${item.profile.sic_codes ? \`<div><span class="field-label">SIC Codes:</span><span class="field-value">\${Array.isArray(item.profile.sic_codes) ? item.profile.sic_codes.join(', ') : item.profile.sic_codes}</span></div>\` : ''}
+                  </div>
+                  \${item.profile.registered_office_address ? \`
+                  <div class="mt-4">
+                    <span class="field-label">Address:</span>
+                    <span class="field-value">
+                      \${formatAddress(item.profile.registered_office_address)}
+                    </span>
+                  </div>
+                  \` : ''}
+                </div>
+                \` : ''}
+
+                <!-- Shareholders/Ownership Structure -->
+                \${item.shareholders && item.shareholders.length > 0 ? \`
+                <div class="card">
+                  <h2 class="section-title"><i class="fas fa-sitemap mr-2"></i>Ownership Structure</h2>
+                  <p class="text-sm text-gray-600 mb-4">
+                    Extracted from Companies House filings (CS01/AR01/IN01) using Tesseract OCR
+                  </p>
+                  
+                  <!-- Ownership Tree -->
+                  <div class="mb-6">
+                    <h3 class="text-lg font-semibold mb-3">Ownership Tree</h3>
+                    <div class="tree">\${shareholderTree}</div>
+                  </div>
+                  
+                  <!-- Shareholder Table -->
+                  <div>
+                    <h3 class="text-lg font-semibold mb-3">Shareholder Details</h3>
+                    <div class="overflow-x-auto">
+                      <table class="w-full text-sm">
+                        <thead class="bg-gray-50">
+                          <tr>
+                            <th class="px-4 py-2 text-left">Name</th>
+                            <th class="px-4 py-2 text-left">Shares</th>
+                            <th class="px-4 py-2 text-left">Percentage</th>
+                            <th class="px-4 py-2 text-left">Class</th>
+                            <th class="px-4 py-2 text-left">Type</th>
+                          </tr>
+                        </thead>
+                        <tbody class="divide-y">
+                          \${item.shareholders.map(sh => \`
+                            <tr>
+                              <td class="px-4 py-2 font-medium">\${sh.name}</td>
+                              <td class="px-4 py-2">\${(sh.shares_held || 0).toLocaleString()}</td>
+                              <td class="px-4 py-2">\${sh.percentage || 0}%</td>
+                              <td class="px-4 py-2">\${sh.share_class || '-'}</td>
+                              <td class="px-4 py-2">
+                                \${isParentCompany(sh.name) ? 
+                                  '<span class="badge badge-warning">Parent Company</span>' : 
+                                  '<span class="badge badge-info">Individual</span>'}
+                              </td>
+                            </tr>
+                          \`).join('')}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+                \` : item.enrich_status === 'done' ? \`
+                <div class="card">
+                  <h2 class="section-title"><i class="fas fa-sitemap mr-2"></i>Ownership Structure</h2>
+                  <p class="text-gray-600">No shareholder information found in CS01/AR01/IN01 filings.</p>
+                </div>
+                \` : ''}
+
+                <!-- Officers -->
+                \${item.officers && item.officers.items && item.officers.items.length > 0 ? \`
+                <div class="card">
+                  <h2 class="section-title"><i class="fas fa-users mr-2"></i>Officers (\${item.officers.items.length})</h2>
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                      <thead class="bg-gray-50">
+                        <tr>
+                          <th class="px-4 py-2 text-left">Name</th>
+                          <th class="px-4 py-2 text-left">Role</th>
+                          <th class="px-4 py-2 text-left">Appointed</th>
+                          <th class="px-4 py-2 text-left">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y">
+                        \${item.officers.items.slice(0, 10).map(officer => \`
+                          <tr>
+                            <td class="px-4 py-2">\${officer.name}</td>
+                            <td class="px-4 py-2">\${officer.officer_role || '-'}</td>
+                            <td class="px-4 py-2">\${officer.appointed_on || '-'}</td>
+                            <td class="px-4 py-2">
+                              <span class="badge \${officer.resigned_on ? 'badge-warning' : 'badge-success'}">
+                                \${officer.resigned_on ? 'Resigned' : 'Active'}
+                              </span>
+                            </td>
+                          </tr>
+                        \`).join('')}
+                      </tbody>
+                    </table>
+                  </div>
+                  \${item.officers.items.length > 10 ? \`<p class="text-sm text-gray-500 mt-2">Showing 10 of \${item.officers.items.length} officers</p>\` : ''}
+                </div>
+                \` : ''}
+
+                <!-- PSCs (Persons with Significant Control) -->
+                \${item.pscs && item.pscs.items && item.pscs.items.length > 0 ? \`
+                <div class="card">
+                  <h2 class="section-title"><i class="fas fa-user-shield mr-2"></i>Persons with Significant Control (\${item.pscs.items.length})</h2>
+                  <div class="space-y-3">
+                    \${item.pscs.items.map(psc => \`
+                      <div class="p-3 bg-gray-50 rounded">
+                        <p class="font-semibold">\${psc.name}</p>
+                        \${psc.natures_of_control ? \`
+                        <p class="text-sm text-gray-600 mt-1">
+                          <i class="fas fa-check-circle text-green-600 mr-1"></i>
+                          \${Array.isArray(psc.natures_of_control) ? psc.natures_of_control.join(', ') : psc.natures_of_control}
+                        </p>
+                        \` : ''}
+                        \${psc.notified_on ? \`<p class="text-xs text-gray-500 mt-1">Notified: \${psc.notified_on}</p>\` : ''}
+                      </div>
+                    \`).join('')}
+                  </div>
+                </div>
+                \` : ''}
+              \`;
+              
+            } catch (error) {
+              document.getElementById('loading').classList.add('hidden');
+              document.getElementById('error').classList.remove('hidden');
+              document.getElementById('error').querySelector('p').textContent = 
+                'Failed to load entity details: ' + error.message;
+            }
+          }
+          
+          function buildOwnershipTree(shareholders) {
+            if (!shareholders || shareholders.length === 0) return 'No ownership data available';
+            
+            let tree = '📊 ' + document.querySelector('h1').textContent.trim() + '\\n';
+            tree += '│\\n';
+            
+            // Sort by percentage descending
+            const sorted = [...shareholders].sort((a, b) => (b.percentage || 0) - (a.percentage || 0));
+            
+            sorted.forEach((sh, idx) => {
+              const isLast = idx === sorted.length - 1;
+              const connector = isLast ? '└── ' : '├── ';
+              const percentage = (sh.percentage || 0).toFixed(2);
+              const shares = (sh.shares_held || 0).toLocaleString();
+              const isParent = isParentCompany(sh.name);
+              const icon = isParent ? '🏢' : '👤';
+              
+              tree += connector + icon + ' ' + sh.name + ' (' + percentage + '% - ' + shares + ' shares)\\n';
+              
+              if (isParent && !isLast) {
+                tree += '│   ' + '  [Parent Company - May have own shareholders]\\n';
+              }
+            });
+            
+            return tree;
+          }
+          
+          function isParentCompany(name) {
+            if (!name) return false;
+            const lowerName = name.toLowerCase();
+            return lowerName.includes('limited') || lowerName.includes('ltd') || 
+                   lowerName.includes('plc') || lowerName.includes('llp') ||
+                   lowerName.includes('trust') || lowerName.includes('lp');
+          }
+          
+          function formatAddress(addr) {
+            if (!addr) return 'N/A';
+            const parts = [
+              addr.address_line_1,
+              addr.address_line_2,
+              addr.locality,
+              addr.postal_code,
+              addr.country
+            ].filter(p => p);
+            return parts.join(', ');
+          }
+          
+          loadItemDetails();
+        </script>
+    </body>
+    </html>
+  `)
+})
+
 app.get('/batch/:id', async (c) => {
   const batchId = c.req.param('id')
   
@@ -524,8 +816,12 @@ app.get('/batch/:id', async (c) => {
                     </thead>
                     <tbody class="divide-y">
                       \${items.map(item => \`
-                        <tr>
-                          <td class="px-4 py-2">\${item.input_name}</td>
+                        <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.location.href='/item/\${item.id}'">
+                          <td class="px-4 py-2">
+                            <a href="/item/\${item.id}" class="text-blue-600 hover:text-blue-800 hover:underline" onclick="event.stopPropagation()">
+                              \${item.input_name}
+                            </a>
+                          </td>
                           <td class="px-4 py-2">\${item.company_number || item.charity_number || '-'}</td>
                           <td class="px-4 py-2">\${item.resolved_registry || '-'}</td>
                           <td class="px-4 py-2">
