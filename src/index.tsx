@@ -546,7 +546,7 @@ app.get('/item/:id', async (c) => {
               // Build shareholders tree
               let shareholderTree = '';
               if (item.shareholders && item.shareholders.length > 0) {
-                shareholderTree = buildOwnershipTree(item.shareholders);
+                shareholderTree = buildOwnershipTree(item.shareholders, item.input_name);
               }
               
               document.getElementById('content').innerHTML = \`
@@ -709,10 +709,10 @@ app.get('/item/:id', async (c) => {
             }
           }
           
-          function buildOwnershipTree(shareholders) {
+          function buildOwnershipTree(shareholders, companyName) {
             if (!shareholders || shareholders.length === 0) return 'No ownership data available';
             
-            let tree = '📊 ' + document.querySelector('h1').textContent.trim() + '\\n';
+            let tree = '📊 ' + companyName + '\\n';
             tree += '│\\n';
             
             // Sort by percentage descending
