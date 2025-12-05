@@ -543,9 +543,11 @@ app.get('/item/:id', async (c) => {
               document.getElementById('loading').classList.add('hidden');
               document.getElementById('content').classList.remove('hidden');
               
-              // Build shareholders tree
+              // Build shareholders tree (use recursive tree if available, otherwise flat)
               let shareholderTree = '';
-              if (item.shareholders && item.shareholders.length > 0) {
+              if (item.ownership_tree && item.ownership_tree.shareholders && item.ownership_tree.shareholders.length > 0) {
+                shareholderTree = buildRecursiveOwnershipTree(item.ownership_tree);
+              } else if (item.shareholders && item.shareholders.length > 0) {
                 shareholderTree = buildOwnershipTree(item.shareholders, item.input_name);
               }
               
@@ -601,9 +603,47 @@ app.get('/item/:id', async (c) => {
                   
                   <!-- Ownership Tree -->
                   <div class="mb-6">
-                    <h3 class="text-lg font-semibold mb-3">Ownership Tree</h3>
+                    <h3 class="text-lg font-semibold mb-3">
+                      <i class="fas fa-project-diagram mr-2"></i>Ownership Tree
+                      \${item.ownership_tree ? '<span class="badge badge-success ml-2">Multi-Layer</span>' : ''}
+                    </h3>
                     <div class="tree">\${shareholderTree}</div>
                   </div>
+                  
+                  <!-- Ownership Chains (if available) -->
+                  \${item.ownership_chains && item.ownership_chains.length > 0 ? \`
+                  <div class="mb-6">
+                    <h3 class="text-lg font-semibold mb-3">
+                      <i class="fas fa-route mr-2"></i>Ultimate Ownership Chains
+                    </h3>
+                    <p class="text-sm text-gray-600 mb-3">
+                      These chains show the path from ultimate beneficial owners to the target company.
+                    </p>
+                    <div class="space-y-3">
+                      \${item.ownership_chains.map((chain, idx) => \`
+                        <div class="bg-gray-50 p-4 rounded-lg border-l-4 border-blue-500">
+                          <div class="font-semibold text-gray-900 mb-2">
+                            Chain #\${idx + 1}: \${chain.ultimate_owner} 
+                            <span class="text-sm font-normal text-gray-600">
+                              (\${chain.total_percentage.toFixed(2)}% - \${chain.chain_length} layers)
+                            </span>
+                          </div>
+                          <div class="text-sm text-gray-700 ml-4">
+                            \${chain.ownership_chain.map((owner, ownerIdx) => \`
+                              <div class="flex items-center gap-2 py-1">
+                                <span>\${owner.is_company ? '🏢' : '👤'}</span>
+                                <span class="font-medium">\${owner.name}</span>
+                                <span class="text-gray-500">(\${owner.percentage.toFixed(2)}%)</span>
+                                \${owner.company_number ? \`<span class="text-xs text-gray-400">[\${owner.company_number}]</span>\` : ''}
+                                \${ownerIdx < chain.ownership_chain.length - 1 ? '<i class="fas fa-arrow-down text-gray-400 ml-2"></i>' : ''}
+                              </div>
+                            \`).join('')}
+                          </div>
+                        </div>
+                      \`).join('')}
+                    </div>
+                  </div>
+                  \` : ''}
                   
                   <!-- Shareholder Table -->
                   <div>
@@ -707,6 +747,56 @@ app.get('/item/:id', async (c) => {
               document.getElementById('error').querySelector('p').textContent = 
                 'Failed to load entity details: ' + error.message;
             }
+          }
+          
+          function buildRecursiveOwnershipTree(tree, depth = 0, prefix = '', isLast = true) {
+            if (!tree) return 'No ownership data available';
+            
+            let result = '';
+            const indent = '  '.repeat(depth);
+            
+            // Root company
+            if (depth === 0) {
+              result += '🏢 ' + tree.company_name + ' (' + tree.company_number + ')\\n';
+              result += '│\\n';
+            }
+            
+            const shareholders = tree.shareholders || [];
+            if (shareholders.length === 0) {
+              return result + indent + '└── No shareholders found\\n';
+            }
+            
+            shareholders.forEach((sh, idx) => {
+              const isLastSh = idx === shareholders.length - 1;
+              const connector = isLastSh ? '└── ' : '├── ';
+              const childPrefix = prefix + (isLast ? '    ' : '│   ');
+              
+              const percentage = (sh.percentage || 0).toFixed(2);
+              const shares = (sh.shares_held || 0).toLocaleString();
+              const icon = sh.is_company ? '🏢' : '👤';
+              
+              result += prefix + connector + icon + ' ' + sh.name + ' (' + percentage + '% - ' + shares + ' shares)';
+              
+              // Show company number if available
+              if (sh.company_number) {
+                result += ' [' + sh.company_number + ']';
+              }
+              
+              result += '\\n';
+              
+              // Recursively show children
+              if (sh.children && sh.children.length > 0) {
+                const childTree = { shareholders: sh.children, company_name: sh.name };
+                const childLines = buildRecursiveOwnershipTree(childTree, depth + 1, childPrefix, isLastSh);
+                result += childLines;
+              } else if (sh.is_company && sh.search_failed) {
+                result += childPrefix + '    ⚠️  [Company not found in Companies House]\\n';
+              } else if (sh.is_company && !sh.child_company) {
+                result += childPrefix + '    📋 [Corporate shareholder - details not extracted]\\n';
+              }
+            });
+            
+            return result;
           }
           
           function buildOwnershipTree(shareholders, companyName) {
