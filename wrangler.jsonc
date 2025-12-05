@@ -5,9 +5,9 @@
   "pages_build_output_dir": "./dist",
   "compatibility_flags": ["nodejs_compat"],
   
-  // Environment variables (set via wrangler secret for sensitive values)
+  // Environment variables (set via Cloudflare Dashboard for production)
+  // BACKEND_API_URL and BACKEND_API_KEY are configured via Cloudflare Pages Settings
   "vars": {
-    "BACKEND_API_URL": "https://entity-validator-backend-production.up.railway.app",
     "ENVIRONMENT": "production"
   }
 }
