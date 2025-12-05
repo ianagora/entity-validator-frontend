@@ -514,9 +514,13 @@ app.get('/batch/:id', async (c) => {
                       \${items.map(item => \`
                         <tr>
                           <td class="px-4 py-2">\${item.input_name}</td>
-                          <td class="px-4 py-2">\${item.entity_name || '-'}</td>
-                          <td class="px-4 py-2">\${item.registry || '-'}</td>
-                          <td class="px-4 py-2">\${item.status}</td>
+                          <td class="px-4 py-2">\${item.company_number || item.charity_number || '-'}</td>
+                          <td class="px-4 py-2">\${item.resolved_registry || '-'}</td>
+                          <td class="px-4 py-2">
+                            <span class="badge \${item.enrich_status === 'done' ? 'badge-success' : item.enrich_status === 'running' ? 'badge-warning' : 'badge-secondary'}">
+                              \${item.enrich_status || 'pending'}
+                            </span>
+                          </td>
                         </tr>
                       \`).join('')}
                     </tbody>
