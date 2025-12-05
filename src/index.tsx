@@ -396,34 +396,46 @@ app.get('/', (c) => {
                 document.getElementById('batches-list').classList.remove('hidden');
 
                 const tbody = document.getElementById('batches-tbody');
-                tbody.innerHTML = batches.map(batch => \`
-                  <tr class="hover:bg-gray-50">
+                tbody.innerHTML = batches.map(batch => {
+                  const stats = batch.stats || {};
+                  const total = stats.total || 0;
+                  const enriched = stats.enriched || 0;
+                  const inProgress = stats.in_progress || 0;
+                  const progress = total > 0 ? Math.round((enriched / total) * 100) : 0;
+                  const status = inProgress > 0 ? 'running' : enriched === total && total > 0 ? 'done' : 'pending';
+                  
+                  return \`
+                  <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.location.href='/batch/\${batch.id}'">
                     <td class="px-4 py-3 text-sm font-mono">\${batch.id}</td>
                     <td class="px-4 py-3 text-sm">\${batch.filename || 'N/A'}</td>
-                    <td class="px-4 py-3 text-sm">\${batch.total_items || 0}</td>
-                    <td class="px-4 py-3 text-sm">\${getStatusBadge(batch.status)}</td>
+                    <td class="px-4 py-3 text-sm">\${total}</td>
+                    <td class="px-4 py-3 text-sm">\${getStatusBadge(status)}</td>
                     <td class="px-4 py-3 text-sm">
                       <div class="w-full bg-gray-200 rounded-full h-2">
-                        <div class="bg-blue-600 h-2 rounded-full" style="width: \${batch.progress || 0}%"></div>
+                        <div class="bg-blue-600 h-2 rounded-full" style="width: \${progress}%"></div>
                       </div>
-                      <span class="text-xs text-gray-500">\${batch.progress || 0}%</span>
+                      <span class="text-xs text-gray-500">\${progress}%</span>
                     </td>
                     <td class="px-4 py-3 text-sm text-gray-500">\${new Date(batch.created_at).toLocaleString()}</td>
                     <td class="px-4 py-3 text-sm">
-                      <a href="/batch/\${batch.id}" class="text-blue-600 hover:text-blue-800 font-medium">
+                      <a href="/batch/\${batch.id}" class="text-blue-600 hover:text-blue-800 font-medium hover:underline" onclick="event.stopPropagation()">
                         <i class="fas fa-eye mr-1"></i> View
                       </a>
                     </td>
                   </tr>
-                \`).join('');
+                  \`;
+                }).join('');
 
                 // Update stats
                 document.getElementById('stat-batches').textContent = batches.length;
-                const totalEntities = batches.reduce((sum, b) => sum + (b.total_items || 0), 0);
+                const totalEntities = batches.reduce((sum, b) => sum + ((b.stats || {}).total || 0), 0);
                 document.getElementById('stat-entities').textContent = totalEntities;
-                const inProgress = batches.filter(b => ['queued', 'running'].includes(b.status)).length;
+                const inProgress = batches.filter(b => ((b.stats || {}).in_progress || 0) > 0).length;
                 document.getElementById('stat-progress').textContent = inProgress;
-                const completed = batches.filter(b => b.status === 'done').length;
+                const completed = batches.filter(b => {
+                  const stats = b.stats || {};
+                  return stats.total > 0 && stats.enriched === stats.total;
+                }).length;
                 const successRate = batches.length > 0 ? Math.round((completed / batches.length) * 100) : 0;
                 document.getElementById('stat-success').textContent = \`\${successRate}%\`;
               }
