@@ -739,6 +739,240 @@ app.get('/item/:id', async (c) => {
                   </div>
                 </div>
                 \` : ''}
+
+                <!-- KYC/AML Screening Requirements -->
+                \${item.screening_list ? \`
+                <div class="card">
+                  <h2 class="section-title">
+                    <i class="fas fa-search-dollar mr-2"></i>KYC/AML Screening Requirements
+                  </h2>
+                  <p class="text-sm text-gray-600 mb-6">
+                    Comprehensive list of persons and entities requiring screening based on UK AML regulations.
+                  </p>
+
+                  <!-- Entity -->
+                  \${item.screening_list.entity && item.screening_list.entity.length > 0 ? \`
+                  <div class="mb-6">
+                    <h3 class="text-lg font-semibold mb-3 flex items-center">
+                      <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2">🏢</span>
+                      Entity
+                    </h3>
+                    <p class="text-sm text-gray-600 mb-3">The legal entity itself</p>
+                    <div class="overflow-x-auto">
+                      <table class="w-full text-sm border">
+                        <thead class="bg-gray-50">
+                          <tr>
+                            <th class="px-4 py-2 text-left border">Name</th>
+                            <th class="px-4 py-2 text-left border">Type</th>
+                            <th class="px-4 py-2 text-left border">Company Number</th>
+                            <th class="px-4 py-2 text-left border">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          \${item.screening_list.entity.map(entity => \`
+                            <tr class="hover:bg-gray-50">
+                              <td class="px-4 py-2 border font-medium">\${entity.name}</td>
+                              <td class="px-4 py-2 border">\${entity.type}</td>
+                              <td class="px-4 py-2 border">\${entity.company_number || '-'}</td>
+                              <td class="px-4 py-2 border">
+                                <span class="badge \${entity.status === 'active' ? 'badge-success' : 'badge-warning'}">
+                                  \${entity.status}
+                                </span>
+                              </td>
+                            </tr>
+                          \`).join('')}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  \` : ''}
+
+                  <!-- Governance & Control -->
+                  \${item.screening_list.governance_and_control && item.screening_list.governance_and_control.length > 0 ? \`
+                  <div class="mb-6">
+                    <h3 class="text-lg font-semibold mb-3 flex items-center">
+                      <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded mr-2">👔</span>
+                      Governance & Control
+                    </h3>
+                    <p class="text-sm text-gray-600 mb-3">Directors, Company Secretary, PSCs</p>
+                    <div class="overflow-x-auto">
+                      <table class="w-full text-sm border">
+                        <thead class="bg-gray-50">
+                          <tr>
+                            <th class="px-4 py-2 text-left border">Name</th>
+                            <th class="px-4 py-2 text-left border">Role</th>
+                            <th class="px-4 py-2 text-left border">Category</th>
+                            <th class="px-4 py-2 text-left border">Appointed</th>
+                            <th class="px-4 py-2 text-left border">Details</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          \${item.screening_list.governance_and_control.map(person => \`
+                            <tr class="hover:bg-gray-50">
+                              <td class="px-4 py-2 border font-medium">\${person.name}</td>
+                              <td class="px-4 py-2 border">
+                                <span class="badge \${person.category === 'Directors' ? 'badge-info' : person.category === 'PSCs' ? 'badge-error' : 'badge-secondary'}">
+                                  \${person.role}
+                                </span>
+                              </td>
+                              <td class="px-4 py-2 border text-xs">\${person.category}</td>
+                              <td class="px-4 py-2 border text-xs">\${person.appointed_on || '-'}</td>
+                              <td class="px-4 py-2 border text-xs">
+                                \${person.nationality ? \`Nationality: \${person.nationality}<br>\` : ''}
+                                \${person.dob ? \`DOB: \${person.dob}\` : ''}
+                              </td>
+                            </tr>
+                          \`).join('')}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  \` : ''}
+
+                  <!-- Ownership Chain -->
+                  \${item.screening_list.ownership_chain && item.screening_list.ownership_chain.length > 0 ? \`
+                  <div class="mb-6">
+                    <h3 class="text-lg font-semibold mb-3 flex items-center">
+                      <span class="bg-green-100 text-green-800 px-2 py-1 rounded mr-2">🔗</span>
+                      Ownership Chain
+                    </h3>
+                    <p class="text-sm text-gray-600 mb-3">Direct shareholders, parents, grandparents, ultimate parents (≥10%)</p>
+                    <div class="overflow-x-auto">
+                      <table class="w-full text-sm border">
+                        <thead class="bg-gray-50">
+                          <tr>
+                            <th class="px-4 py-2 text-left border">Name</th>
+                            <th class="px-4 py-2 text-left border">Role</th>
+                            <th class="px-4 py-2 text-left border">Shareholding</th>
+                            <th class="px-4 py-2 text-left border">Company Number</th>
+                            <th class="px-4 py-2 text-left border">Category</th>
+                            <th class="px-4 py-2 text-left border">Layer</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          \${item.screening_list.ownership_chain.map(owner => {
+                            const depthColors = {
+                              0: 'bg-green-50',
+                              1: 'bg-yellow-50',
+                              2: 'bg-orange-50'
+                            };
+                            const depthColor = depthColors[owner.depth] || 'bg-red-50';
+                            return \`
+                            <tr class="hover:bg-gray-50 \${depthColor}">
+                              <td class="px-4 py-2 border font-medium">
+                                \${owner.is_company ? '🏢' : '👤'} \${owner.name}
+                              </td>
+                              <td class="px-4 py-2 border">\${owner.role}</td>
+                              <td class="px-4 py-2 border font-semibold text-green-700">\${owner.shareholding}</td>
+                              <td class="px-4 py-2 border text-xs">\${owner.company_number || '-'}</td>
+                              <td class="px-4 py-2 border text-xs">\${owner.category}</td>
+                              <td class="px-4 py-2 border text-center">
+                                <span class="badge">\${owner.depth}</span>
+                              </td>
+                            </tr>
+                            \`;
+                          }).join('')}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  \` : ''}
+
+                  <!-- UBOs -->
+                  \${item.screening_list.ubos && item.screening_list.ubos.length > 0 ? \`
+                  <div class="mb-6">
+                    <h3 class="text-lg font-semibold mb-3 flex items-center">
+                      <span class="bg-red-100 text-red-800 px-2 py-1 rounded mr-2">⭐</span>
+                      Ultimate Beneficial Owners (UBOs)
+                    </h3>
+                    <p class="text-sm text-gray-600 mb-3">Individuals with ≥10% indirect ownership or control</p>
+                    <div class="overflow-x-auto">
+                      <table class="w-full text-sm border">
+                        <thead class="bg-red-50">
+                          <tr>
+                            <th class="px-4 py-2 text-left border">Name</th>
+                            <th class="px-4 py-2 text-left border">Role</th>
+                            <th class="px-4 py-2 text-left border">Shareholding</th>
+                            <th class="px-4 py-2 text-left border">Shares Held</th>
+                            <th class="px-4 py-2 text-left border">Type</th>
+                            <th class="px-4 py-2 text-left border">Layer</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          \${item.screening_list.ubos.map(ubo => \`
+                            <tr class="hover:bg-red-50 bg-yellow-50">
+                              <td class="px-4 py-2 border font-bold">👤 \${ubo.name}</td>
+                              <td class="px-4 py-2 border">\${ubo.role}</td>
+                              <td class="px-4 py-2 border font-semibold text-red-700">\${ubo.shareholding}</td>
+                              <td class="px-4 py-2 border">\${ubo.shares_held ? ubo.shares_held.toLocaleString() : '-'}</td>
+                              <td class="px-4 py-2 border text-xs">
+                                \${ubo.indirect_ownership ? '<span class="badge badge-warning">Indirect</span>' : '<span class="badge badge-info">Control</span>'}
+                              </td>
+                              <td class="px-4 py-2 border text-center">
+                                <span class="badge">\${ubo.depth || 0}</span>
+                              </td>
+                            </tr>
+                          \`).join('')}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  \` : ''}
+
+                  <!-- Trusts -->
+                  \${item.screening_list.trusts && item.screening_list.trusts.length > 0 ? \`
+                  <div class="mb-6">
+                    <h3 class="text-lg font-semibold mb-3 flex items-center">
+                      <span class="bg-indigo-100 text-indigo-800 px-2 py-1 rounded mr-2">📋</span>
+                      Trusts
+                    </h3>
+                    <p class="text-sm text-gray-600 mb-3">Settlors, Trustees, Protectors, Beneficiaries</p>
+                    <div class="overflow-x-auto">
+                      <table class="w-full text-sm border">
+                        <thead class="bg-gray-50">
+                          <tr>
+                            <th class="px-4 py-2 text-left border">Name</th>
+                            <th class="px-4 py-2 text-left border">Role</th>
+                            <th class="px-4 py-2 text-left border">Shareholding</th>
+                            <th class="px-4 py-2 text-left border">Category</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          \${item.screening_list.trusts.map(trust => \`
+                            <tr class="hover:bg-gray-50 bg-purple-50">
+                              <td class="px-4 py-2 border font-medium">\${trust.name}</td>
+                              <td class="px-4 py-2 border">
+                                <span class="badge badge-secondary">\${trust.role}</span>
+                              </td>
+                              <td class="px-4 py-2 border">\${trust.shareholding || '-'}</td>
+                              <td class="px-4 py-2 border text-xs">\${trust.category}</td>
+                            </tr>
+                          \`).join('')}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  \` : ''}
+
+                  <!-- Notes Section -->
+                  <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+                    <h4 class="font-semibold text-blue-900 mb-2">
+                      <i class="fas fa-info-circle mr-2"></i>Additional Information Required
+                    </h4>
+                    <ul class="text-sm text-blue-800 space-y-1">
+                      <li><strong>• Associated Persons:</strong> Authorized signatories, introducers/brokers, SMF holders - collect via client questionnaire</li>
+                      <li><strong>• Guarantee Company Members:</strong> Not available in public registers - requires company records</li>
+                      <li><strong>• Subsidiaries:</strong> Controlled subsidiaries and joint ventures - requires additional verification</li>
+                      <li><strong>• Trust Beneficiaries:</strong> Full beneficiary details may not be publicly disclosed</li>
+                    </ul>
+                  </div>
+
+                  <div class="mt-4 p-3 bg-gray-50 rounded text-xs text-gray-600">
+                    <p><strong>Data Sources:</strong> Companies House API, PSC Register, Ownership Tree Analysis</p>
+                    <p class="mt-1"><strong>Note:</strong> This screening list is based on public register data. Some information may require manual collection via client questionnaires or additional documentation.</p>
+                  </div>
+                </div>
+                \` : ''}
               \`;
               
             } catch (error) {
