@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { serveStatic } from 'hono/cloudflare-workers'
 
+// KYC/AML Screening Requirements - Version 1.0
 type Bindings = {
   BACKEND_API_URL: string;
   BACKEND_API_KEY: string;
