@@ -552,6 +552,10 @@ app.get('/item/:id', async (c) => {
                 shareholderTree = buildOwnershipTree(item.shareholders, item.input_name);
               }
               
+              // Debug: Log screening_list status
+              console.log('[DEBUG] Has screening_list:', !!item.screening_list);
+              console.log('[DEBUG] Screening categories:', item.screening_list ? Object.keys(item.screening_list) : 'none');
+              
               document.getElementById('content').innerHTML = \`
                 <!-- Header -->
                 <div class="card">
