@@ -1117,203 +1117,73 @@ app.get('/item/:id', async (c) => {
             }
           }
           
-          // SVG Tree Visualization Functions
-          let currentZoom = 1;
-          const minZoom = 0.5;
-          const maxZoom = 3;
-          const zoomStep = 0.2;
-          
-          function zoomIn() {
-            currentZoom = Math.min(currentZoom + zoomStep, maxZoom);
-            updateTreeZoom();
-          }
-          
-          function zoomOut() {
-            currentZoom = Math.max(currentZoom - zoomStep, minZoom);
-            updateTreeZoom();
-          }
-          
-          function resetZoom() {
-            currentZoom = 1;
-            updateTreeZoom();
-          }
-          
-          function updateTreeZoom() {
-            const svg = document.querySelector('#ownership-tree-container svg');
-            if (svg) {
-              const g = svg.querySelector('g');
-              if (g) {
-                g.setAttribute('transform', `scale(${currentZoom})`);
-              }
-            }
-          }
-          
-          function downloadTreeSVG() {
-            const svg = document.querySelector('#ownership-tree-container svg');
-            if (!svg) return;
-            
-            const svgData = new XMLSerializer().serializeToString(svg);
-            const blob = new Blob([svgData], { type: 'image/svg+xml' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `ownership-structure-${itemId}.svg`;
-            link.click();
-            URL.revokeObjectURL(url);
-          }
-          
-          function buildRecursiveOwnershipTree(tree, depth = 0) {
+          function buildRecursiveOwnershipTree(tree, depth = 0, prefix = '', isLast = true) {
             if (!tree) return 'No ownership data available';
             
-            // Calculate tree structure and positions
-            const nodes = [];
-            const links = [];
+            // Color coding by depth
+            const depthColors = {
+              0: '#1e40af', // blue-800 (root)
+              1: '#3b82f6', // blue-500
+              2: '#059669', // green-600
+              3: '#10b981', // green-500
+              4: '#f59e0b', // yellow-500
+              5: '#f97316', // orange-500
+              6: '#ef4444', // red-500
+              7: '#dc2626', // red-600
+              8: '#991b1b'  // red-800 (very deep)
+            };
+            const color = depthColors[Math.min(depth, 8)] || '#6b7280';
             
-            function traverseTree(node, depth, x, y, parentId) {
-              const nodeId = `node-${nodes.length}`;
-              const isCompany = node.is_company !== false;
-              
-              nodes.push({
-                id: nodeId,
-                name: node.company_name || node.name,
-                companyNumber: node.company_number,
-                percentage: node.percentage || (depth === 0 ? 100 : 0),
-                shares: node.shares_held || 0,
-                isCompany: isCompany,
-                depth: depth,
-                x: x,
-                y: y
-              });
-              
-              if (parentId) {
-                links.push({ source: parentId, target: nodeId });
-              }
-              
-              const shareholders = node.shareholders || [];
-              if (shareholders.length > 0) {
-                const childY = y + 150;
-                const totalWidth = shareholders.length * 250;
-                const startX = x - totalWidth / 2 + 125;
-                
-                shareholders.forEach((sh, idx) => {
-                  const childX = startX + idx * 250;
-                  traverseTree(sh, depth + 1, childX, childY, nodeId);
-                });
-              }
+            let result = '';
+            const indent = '  '.repeat(depth);
+            
+            // Root company
+            if (depth === 0) {
+              result += \`<span style="color: \${color}; font-weight: bold;">🏢 \${tree.company_name} (\${tree.company_number})</span>\\n\`;
+              result += '<span style="color: #9ca3af;">│</span>\\n';
             }
             
-            traverseTree(tree, 0, 400, 50, null);
+            const shareholders = tree.shareholders || [];
+            if (shareholders.length === 0) {
+              return result + indent + '<span style="color: #9ca3af;">└── No shareholders found</span>\\n';
+            }
             
-            // Generate SVG and inject into container
-            const svg = createOwnershipSVG(nodes, links);
-            setTimeout(() => {
-              const container = document.getElementById('ownership-tree-container');
-              if (container) {
-                container.innerHTML = svg;
+            shareholders.forEach((sh, idx) => {
+              const isLastSh = idx === shareholders.length - 1;
+              const connector = isLastSh ? '└── ' : '├── ';
+              const childPrefix = prefix + (isLast ? '    ' : '│   ');
+              
+              const percentage = (sh.percentage || 0).toFixed(2);
+              const shares = (sh.shares_held || 0).toLocaleString();
+              const icon = sh.is_company ? '🏢' : '👤';
+              
+              // Color the connector and tree lines
+              const styledPrefix = prefix.replace(/│/g, '<span style="color: #9ca3af;">│</span>');
+              const styledConnector = \`<span style="color: #9ca3af;">\${connector}</span>\`;
+              
+              result += styledPrefix + styledConnector + \`<span style="color: \${color}; font-weight: 500;">\${icon} \${sh.name}</span>\`;
+              result += \` <span style="color: #6b7280;">(\${percentage}% - \${shares} shares)</span>\`;
+              
+              // Show company number if available
+              if (sh.company_number) {
+                result += \` <span style="color: #9ca3af; font-size: 0.9em;">[</span><span style="color: #3b82f6;">\${sh.company_number}</span><span style="color: #9ca3af; font-size: 0.9em;">]</span>\`;
               }
-            }, 100);
-            
-            return ''; // Return empty string as we're injecting directly
-          }
-          
-          function createOwnershipSVG(nodes, links) {
-            if (nodes.length === 0) return '<p class="text-gray-500">No ownership data</p>';
-            
-            // Calculate SVG dimensions
-            const maxX = Math.max(...nodes.map(n => n.x)) + 150;
-            const maxY = Math.max(...nodes.map(n => n.y)) + 100;
-            const width = Math.max(800, maxX);
-            const height = Math.max(400, maxY);
-            
-            const depthColors = [
-              '#1e40af', // blue-800 (root)
-              '#3b82f6', // blue-500
-              '#059669', // green-600
-              '#10b981', // green-500
-              '#f59e0b', // yellow-500
-              '#f97316', // orange-500
-              '#ef4444', // red-500
-              '#dc2626'  // red-600
-            ];
-            
-            let svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" style="border: 1px solid #e5e7eb; border-radius: 8px; background: #ffffff;">`;
-            svg += '<defs>';
-            svg += '<marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#9ca3af" /></marker>';
-            svg += '<filter id="shadow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceAlpha" stdDeviation="3"/><feOffset dx="0" dy="2" result="offsetblur"/><feComponentTransfer><feFuncA type="linear" slope="0.2"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
-            svg += '</defs>';
-            svg += '<g transform="scale(1)">';
-            
-            // Draw links first (so they appear behind nodes)
-            links.forEach(link => {
-              const source = nodes.find(n => n.id === link.source);
-              const target = nodes.find(n => n.id === link.target);
-              if (source && target) {
-                const sourceX = source.x;
-                const sourceY = source.y + 40; // Bottom of source box
-                const targetX = target.x;
-                const targetY = target.y - 10; // Top of target box
-                
-                // Draw curved line
-                const midY = (sourceY + targetY) / 2;
-                svg += `<path d="M ${sourceX} ${sourceY} C ${sourceX} ${midY}, ${targetX} ${midY}, ${targetX} ${targetY}" stroke="#9ca3af" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>`;
-                
-                // Add percentage label on link if available
-                if (target.percentage > 0) {
-                  const labelX = (sourceX + targetX) / 2;
-                  const labelY = (sourceY + targetY) / 2 - 5;
-                  svg += `<text x="${labelX}" y="${labelY}" text-anchor="middle" font-size="11" fill="#6b7280" font-weight="600">${target.percentage.toFixed(1)}%</text>`;
-                }
+              
+              result += '\\n';
+              
+              // Recursively show children
+              if (sh.children && sh.children.length > 0) {
+                const childTree = { shareholders: sh.children, company_name: sh.name };
+                const childLines = buildRecursiveOwnershipTree(childTree, depth + 1, childPrefix, isLastSh);
+                result += childLines;
+              } else if (sh.is_company && sh.search_failed) {
+                result += childPrefix + '    ⚠️  [Company not found in Companies House]\\n';
+              } else if (sh.is_company && !sh.child_company) {
+                result += childPrefix + '    📋 [Corporate shareholder - details not extracted]\\n';
               }
             });
             
-            // Draw nodes
-            nodes.forEach(node => {
-              const color = depthColors[Math.min(node.depth, depthColors.length - 1)];
-              const fillColor = node.depth === 0 ? color : '#ffffff';
-              const strokeColor = color;
-              const textColor = node.depth === 0 ? '#ffffff' : '#1f2937';
-              
-              // Node box
-              svg += `<rect x="${node.x - 100}" y="${node.y - 35}" width="200" height="70" rx="8" ry="8" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2" filter="url(#shadow)" style="cursor: pointer;"/>`;
-              
-              // Company icon
-              const icon = node.isCompany ? '🏢' : '👤';
-              svg += `<text x="${node.x - 90}" y="${node.y - 10}" font-size="16">${icon}</text>`;
-              
-              // Company name (truncate if too long)
-              const maxNameLength = 24;
-              const displayName = node.name.length > maxNameLength ? node.name.substring(0, maxNameLength) + '...' : node.name;
-              svg += `<text x="${node.x - 65}" y="${node.y - 10}" font-size="12" font-weight="600" fill="${textColor}">${escapeXml(displayName)}</text>`;
-              
-              // Company number
-              if (node.companyNumber) {
-                svg += `<text x="${node.x - 65}" y="${node.y + 5}" font-size="10" fill="${node.depth === 0 ? '#e5e7eb' : '#6b7280'}">${node.companyNumber}</text>`;
-              }
-              
-              // Shares info
-              if (node.shares > 0) {
-                const sharesText = `${node.shares.toLocaleString()} shares`;
-                svg += `<text x="${node.x - 65}" y="${node.y + 20}" font-size="9" fill="${node.depth === 0 ? '#d1d5db' : '#9ca3af'}">${sharesText}</text>`;
-              }
-            });
-            
-            svg += '</g></svg>';
-            
-            return svg;
-          }
-          
-          function escapeXml(unsafe) {
-            if (typeof unsafe !== 'string') return '';
-            return unsafe.replace(/[<>&'"]/g, function (c) {
-              switch (c) {
-                case '<': return '&lt;';
-                case '>': return '&gt;';
-                case '&': return '&amp;';
-                case "'": return '&apos;';
-                case '"': return '&quot;';
-                default: return c;
-              }
-            });
+            return result;
           }
           
           function buildOwnershipTree(shareholders, companyName) {
