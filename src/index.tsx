@@ -771,6 +771,7 @@ app.get('/item/:id', async (c) => {
                 \${item.pscs && item.pscs.items && item.pscs.items.length > 0 ? \`
                 <div class="card">
                   <h2 class="section-title"><i class="fas fa-user-shield mr-2"></i>Persons with Significant Control (\${item.pscs.items.length})</h2>
+                  <p class="text-xs text-red-600 font-bold mb-2">🔴 DEPLOYMENT TEST MARKER - Commit 2e7d7e7 - If you see this, new code is deployed!</p>
                   <div class="space-y-3">
                     \${item.pscs.items.map(psc => \`
                       <div class="p-3 bg-gray-50 rounded">
@@ -787,6 +788,12 @@ app.get('/item/:id', async (c) => {
                   </div>
                 </div>
                 \` : ''}
+
+                <!-- 🔴 DEPLOYMENT MARKER - Line 791 - Screening Section Starts Here -->
+                <div style="background: #fee; border: 2px solid red; padding: 10px; margin: 20px 0;">
+                  <p style="color: red; font-weight: bold;">🔴 DEPLOYMENT TEST: If you see this red box, the screening section code is executing!</p>
+                  <p style="font-size: 12px;">Commit: 2e7d7e7</p>
+                </div>
 
                 <!-- KYC/AML Screening Requirements -->
                 <div class="card">
