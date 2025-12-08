@@ -879,29 +879,33 @@ app.get('/item/:id', async (c) => {
                     </div>
                   </div>
 
-                  <!-- Entity -->
-                  \${item.screening_list && item.screening_list.entity && item.screening_list.entity.length > 0 ? \`
+                  <!-- Entities & Governance (Merged) -->
+                  \${((item.screening_list && item.screening_list.entity && item.screening_list.entity.length > 0) || (item.screening_list && item.screening_list.governance_and_control && item.screening_list.governance_and_control.length > 0)) ? \`
                   <div class="mb-6">
                     <h3 class="text-lg font-semibold mb-3 flex items-center">
                       <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2">🏢</span>
-                      Entity
+                      Entities & Governance
                     </h3>
-                    <p class="text-sm text-gray-600 mb-3">The legal entity itself</p>
+                    <p class="text-sm text-gray-600 mb-3">All entities, directors, company secretary, and PSCs from the complete ownership structure</p>
                     <div class="overflow-x-auto">
                       <table class="w-full text-sm border">
                         <thead class="bg-gray-50">
                           <tr>
                             <th class="px-4 py-2 text-left border">Name</th>
-                            <th class="px-4 py-2 text-left border">Type</th>
+                            <th class="px-4 py-2 text-left border">Type/Role</th>
+                            <th class="px-4 py-2 text-left border">Category</th>
                             <th class="px-4 py-2 text-left border">Company Number</th>
-                            <th class="px-4 py-2 text-left border">Status</th>
+                            <th class="px-4 py-2 text-left border">Status/Details</th>
                           </tr>
                         </thead>
                         <tbody>
-                          \${item.screening_list.entity.map(entity => \`
+                          \${(item.screening_list.entity || []).map(entity => \`
                             <tr class="hover:bg-gray-50">
                               <td class="px-4 py-2 border font-medium">\${entity.name}</td>
-                              <td class="px-4 py-2 border">\${entity.type}</td>
+                              <td class="px-4 py-2 border">
+                                <span class="badge badge-info">\${entity.type}</span>
+                              </td>
+                              <td class="px-4 py-2 border text-xs">Entity</td>
                               <td class="px-4 py-2 border">\${entity.company_number || '-'}</td>
                               <td class="px-4 py-2 border">
                                 <span class="badge \${entity.status === 'active' ? 'badge-success' : 'badge-warning'}">
@@ -910,33 +914,7 @@ app.get('/item/:id', async (c) => {
                               </td>
                             </tr>
                           \`).join('')}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                  \` : ''}
-
-                  <!-- Governance & Control -->
-                  \${item.screening_list.governance_and_control && item.screening_list.governance_and_control.length > 0 ? \`
-                  <div class="mb-6">
-                    <h3 class="text-lg font-semibold mb-3 flex items-center">
-                      <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded mr-2">👔</span>
-                      Governance & Control
-                    </h3>
-                    <p class="text-sm text-gray-600 mb-3">Directors, Company Secretary, PSCs</p>
-                    <div class="overflow-x-auto">
-                      <table class="w-full text-sm border">
-                        <thead class="bg-gray-50">
-                          <tr>
-                            <th class="px-4 py-2 text-left border">Name</th>
-                            <th class="px-4 py-2 text-left border">Role</th>
-                            <th class="px-4 py-2 text-left border">Category</th>
-                            <th class="px-4 py-2 text-left border">Appointed</th>
-                            <th class="px-4 py-2 text-left border">Details</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          \${item.screening_list.governance_and_control.map(person => \`
+                          \${(item.screening_list.governance_and_control || []).map(person => \`
                             <tr class="hover:bg-gray-50">
                               <td class="px-4 py-2 border font-medium">\${person.name}</td>
                               <td class="px-4 py-2 border">
@@ -945,8 +923,9 @@ app.get('/item/:id', async (c) => {
                                 </span>
                               </td>
                               <td class="px-4 py-2 border text-xs">\${person.category}</td>
-                              <td class="px-4 py-2 border text-xs">\${person.appointed_on || '-'}</td>
+                              <td class="px-4 py-2 border">-</td>
                               <td class="px-4 py-2 border text-xs">
+                                \${person.appointed_on ? \`Appointed: \${person.appointed_on}<br>\` : ''}
                                 \${person.nationality ? \`Nationality: \${person.nationality}<br>\` : ''}
                                 \${person.dob ? \`DOB: \${person.dob}\` : ''}
                               </td>
@@ -1083,22 +1062,9 @@ app.get('/item/:id', async (c) => {
                   </div>
                   \` : ''}
 
-                  <!-- Notes Section -->
-                  <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-                    <h4 class="font-semibold text-blue-900 mb-2">
-                      <i class="fas fa-info-circle mr-2"></i>Additional Information Required
-                    </h4>
-                    <ul class="text-sm text-blue-800 space-y-1">
-                      <li><strong>• Associated Persons:</strong> Authorized signatories, introducers/brokers, SMF holders - collect via client questionnaire</li>
-                      <li><strong>• Guarantee Company Members:</strong> Not available in public registers - requires company records</li>
-                      <li><strong>• Subsidiaries:</strong> Controlled subsidiaries and joint ventures - requires additional verification</li>
-                      <li><strong>• Trust Beneficiaries:</strong> Full beneficiary details may not be publicly disclosed</li>
-                    </ul>
-                  </div>
-
                   <div class="mt-4 p-3 bg-gray-50 rounded text-xs text-gray-600">
                     <p><strong>Data Sources:</strong> Companies House API, PSC Register, Ownership Tree Analysis</p>
-                    <p class="mt-1"><strong>Note:</strong> This screening list is based on public register data. Some information may require manual collection via client questionnaires or additional documentation.</p>
+                    <p class="mt-1"><strong>Note:</strong> This screening list is based on public register data and includes all entities from the ownership structure.</p>
                   </div>
                 </div>
               \`;
@@ -1189,13 +1155,17 @@ app.get('/item/:id', async (c) => {
                 links.push({ source: parentId, target: nodeId });
               }
               
+              // Process both shareholders and children arrays
               const shareholders = node.shareholders || [];
-              if (shareholders.length > 0) {
+              const children = node.children || [];
+              const allChildren = [...shareholders, ...children];
+              
+              if (allChildren.length > 0) {
                 const childY = y + 150;
-                const totalWidth = shareholders.length * 250;
+                const totalWidth = allChildren.length * 250;
                 const startX = x - totalWidth / 2 + 125;
                 
-                shareholders.forEach((sh, idx) => {
+                allChildren.forEach((sh, idx) => {
                   const childX = startX + idx * 250;
                   traverseTree(sh, depth + 1, childX, childY, nodeId);
                 });
@@ -1280,10 +1250,35 @@ app.get('/item/:id', async (c) => {
               const icon = node.isCompany ? '🏢' : '👤';
               svg += '<text x="' + (node.x - 90) + '" y="' + (node.y - 10) + '" font-size="16">' + icon + '</text>';
               
-              // Company name (truncate if too long)
-              const maxNameLength = 24;
-              const displayName = node.name.length > maxNameLength ? node.name.substring(0, maxNameLength) + '...' : node.name;
-              svg += '<text x="' + (node.x - 65) + '" y="' + (node.y - 10) + '" font-size="12" font-weight="600" fill="' + textColor + '">' + escapeXml(displayName) + '</text>';
+              // Company name with wrapping
+              const maxCharsPerLine = 20;
+              const words = node.name.split(' ');
+              const lines = [];
+              let currentLine = '';
+              
+              words.forEach(word => {
+                if ((currentLine + ' ' + word).length <= maxCharsPerLine) {
+                  currentLine = currentLine ? currentLine + ' ' + word : word;
+                } else {
+                  if (currentLine) lines.push(currentLine);
+                  currentLine = word;
+                }
+              });
+              if (currentLine) lines.push(currentLine);
+              
+              // Limit to 2 lines
+              if (lines.length > 2) {
+                lines[1] = lines[1].substring(0, maxCharsPerLine - 3) + '...';
+                lines = lines.slice(0, 2);
+              }
+              
+              // Render text with tspan for each line
+              const startY = node.y - 15 + (lines.length === 1 ? 5 : 0);
+              svg += '<text x="' + (node.x - 65) + '" y="' + startY + '" font-size="11" font-weight="600" fill="' + textColor + '">';
+              lines.forEach((line, idx) => {
+                svg += '<tspan x="' + (node.x - 65) + '" dy="' + (idx === 0 ? 0 : 12) + '">' + escapeXml(line) + '</tspan>';
+              });
+              svg += '</text>';
               
               // Company number
               if (node.companyNumber) {
