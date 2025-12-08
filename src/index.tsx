@@ -1127,8 +1127,8 @@ app.get('/item/:id', async (c) => {
               const svgClone = svg.cloneNode(true);
               
               // Add XML declaration and namespace
-              const svgData = '<?xml version="1.0" encoding="UTF-8"?>\n' + 
-                              new XMLSerializer().serializeToString(svgClone);
+              const xmlDeclaration = String.fromCharCode(60, 63) + 'xml version="1.0" encoding="UTF-8"' + String.fromCharCode(63, 62) + '\\n';
+              const svgData = xmlDeclaration + new XMLSerializer().serializeToString(svgClone);
               
               const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
               const url = URL.createObjectURL(blob);
