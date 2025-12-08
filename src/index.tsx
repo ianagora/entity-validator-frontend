@@ -160,6 +160,30 @@ app.get('/api/item/:id', async (c) => {
   }
 })
 
+// Export screening list as CSV
+app.get('/api/item/:id/screening-export.csv', async (c) => {
+  const itemId = c.req.param('id')
+  
+  try {
+    const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}/screening-export.csv`, {
+      headers: {
+        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
+      }
+    })
+    
+    // Return CSV directly
+    const csvData = await response.text()
+    return new Response(csvData, {
+      headers: {
+        'Content-Type': 'text/csv',
+        'Content-Disposition': `attachment; filename=screening_list_${itemId}.csv`
+      }
+    })
+  } catch (error) {
+    return c.json({ error: 'Failed to export screening list', details: String(error) }, 500)
+  }
+})
+
 // Get batch items
 app.get('/api/batch/:id/items', async (c) => {
   const batchId = c.req.param('id')
