@@ -1116,15 +1116,20 @@ app.get('/item/:id', async (c) => {
           
           function downloadTreeSVG() {
             const svg = document.querySelector('#ownership-tree-container svg');
-            if (!svg) return;
+            if (!svg) {
+              alert('Please wait for the ownership tree to load before downloading.');
+              return;
+            }
             
             const svgData = new XMLSerializer().serializeToString(svg);
-            const blob = new Blob([svgData], { type: 'image/svg+xml' });
+            const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
             link.download = 'ownership-structure-' + itemId + '.svg';
+            document.body.appendChild(link);
             link.click();
+            document.body.removeChild(link);
             URL.revokeObjectURL(url);
           }
           
