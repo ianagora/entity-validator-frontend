@@ -1442,12 +1442,13 @@ app.get('/batch/:id', async (c) => {
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script>
-          console.log('[BATCH] Page loaded, batch ID: ${batchId}');
+          const batchId = ${JSON.stringify(batchId)};
+          console.log('[BATCH] Page loaded, batch ID:', batchId);
           
           async function loadBatchDetails() {
             try {
               console.log('[BATCH] Fetching batch items...');
-              const response = await axios.get('/api/batch/${batchId}/items');
+              const response = await axios.get('/api/batch/' + batchId + '/items');
               console.log('[BATCH] Response received:', response.status);
               console.log('[BATCH] Data:', response.data);
               
@@ -1459,72 +1460,73 @@ app.get('/batch/:id', async (c) => {
               if (loadingEl) loadingEl.style.display = 'none';
               
               if (items.length === 0) {
-                document.getElementById('batch-details').innerHTML = \`
-                  <div class="text-center py-8">
-                    <i class="fas fa-inbox text-gray-400 text-5xl mb-4"></i>
-                    <p class="text-gray-600">No items found in this batch</p>
-                  </div>
-                \`;
+                document.getElementById('batch-details').innerHTML = 
+                  '<div class="text-center py-8">' +
+                  '<i class="fas fa-inbox text-gray-400 text-5xl mb-4"></i>' +
+                  '<p class="text-gray-600">No items found in this batch</p>' +
+                  '</div>';
                 return;
               }
               
-              document.getElementById('batch-details').innerHTML = \`
-                <h2 class="text-xl font-bold mb-4">Items (\${items.length})</h2>
-                <div class="overflow-x-auto">
-                  <table class="w-full">
-                    <thead class="bg-gray-50">
-                      <tr>
-                        <th class="px-4 py-2 text-left">Input Name</th>
-                        <th class="px-4 py-2 text-left">Matched Entity</th>
-                        <th class="px-4 py-2 text-left">Registry</th>
-                        <th class="px-4 py-2 text-left">Status</th>
-                        <th class="px-4 py-2 text-left">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody class="divide-y">
-                      \${items.map(item => \`
-                        <tr class="hover:bg-gray-50">
-                          <td class="px-4 py-2">
-                            <a href="/item/\${item.id}" class="text-blue-600 hover:text-blue-800 hover:underline font-medium">
-                              \${item.input_name}
-                            </a>
-                          </td>
-                          <td class="px-4 py-2">\${item.company_number || item.charity_number || '-'}</td>
-                          <td class="px-4 py-2">\${item.resolved_registry || '-'}</td>
-                          <td class="px-4 py-2">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium \${
-                              item.enrich_status === 'done' ? 'bg-green-100 text-green-800' : 
-                              item.enrich_status === 'running' ? 'bg-yellow-100 text-yellow-800' : 
-                              'bg-gray-100 text-gray-800'
-                            }">
-                              \${item.enrich_status || 'pending'}
-                            </span>
-                          </td>
-                          <td class="px-4 py-2">
-                            <a href="/item/\${item.id}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                              View Details <i class="fas fa-arrow-right ml-1"></i>
-                            </a>
-                          </td>
-                        </tr>
-                      \`).join('')}
-                    </tbody>
-                  </table>
-                </div>
-              \`;
+              // Build table rows
+              const tableRows = items.map(item => {
+                const statusClass = 
+                  item.enrich_status === 'done' ? 'bg-green-100 text-green-800' : 
+                  item.enrich_status === 'running' ? 'bg-yellow-100 text-yellow-800' : 
+                  'bg-gray-100 text-gray-800';
+                
+                return '<tr class="hover:bg-gray-50">' +
+                  '<td class="px-4 py-2">' +
+                    '<a href="/item/' + item.id + '" class="text-blue-600 hover:text-blue-800 hover:underline font-medium">' +
+                      item.input_name +
+                    '</a>' +
+                  '</td>' +
+                  '<td class="px-4 py-2">' + (item.company_number || item.charity_number || '-') + '</td>' +
+                  '<td class="px-4 py-2">' + (item.resolved_registry || '-') + '</td>' +
+                  '<td class="px-4 py-2">' +
+                    '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ' + statusClass + '">' +
+                      (item.enrich_status || 'pending') +
+                    '</span>' +
+                  '</td>' +
+                  '<td class="px-4 py-2">' +
+                    '<a href="/item/' + item.id + '" class="text-blue-600 hover:text-blue-800 text-sm font-medium">' +
+                      'View Details <i class="fas fa-arrow-right ml-1"></i>' +
+                    '</a>' +
+                  '</td>' +
+                '</tr>';
+              }).join('');
+              
+              document.getElementById('batch-details').innerHTML = 
+                '<h2 class="text-xl font-bold mb-4">Items (' + items.length + ')</h2>' +
+                '<div class="overflow-x-auto">' +
+                  '<table class="w-full">' +
+                    '<thead class="bg-gray-50">' +
+                      '<tr>' +
+                        '<th class="px-4 py-2 text-left">Input Name</th>' +
+                        '<th class="px-4 py-2 text-left">Matched Entity</th>' +
+                        '<th class="px-4 py-2 text-left">Registry</th>' +
+                        '<th class="px-4 py-2 text-left">Status</th>' +
+                        '<th class="px-4 py-2 text-left">Actions</th>' +
+                      '</tr>' +
+                    '</thead>' +
+                    '<tbody class="divide-y">' +
+                      tableRows +
+                    '</tbody>' +
+                  '</table>' +
+                '</div>';
               
               console.log('[BATCH] Table rendered successfully');
             } catch (error) {
               console.error('[BATCH] Error loading batch:', error);
-              document.getElementById('batch-details').innerHTML = \`
-                <div class="text-center py-8">
-                  <i class="fas fa-exclamation-triangle text-red-500 text-5xl mb-4"></i>
-                  <p class="text-red-600 font-semibold mb-2">Failed to load batch details</p>
-                  <p class="text-gray-600 text-sm">\${error.message}</p>
-                  <button onclick="loadBatchDetails()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                    <i class="fas fa-redo mr-2"></i>Retry
-                  </button>
-                </div>
-              \`;
+              document.getElementById('batch-details').innerHTML = 
+                '<div class="text-center py-8">' +
+                  '<i class="fas fa-exclamation-triangle text-red-500 text-5xl mb-4"></i>' +
+                  '<p class="text-red-600 font-semibold mb-2">Failed to load batch details</p>' +
+                  '<p class="text-gray-600 text-sm">' + error.message + '</p>' +
+                  '<button onclick="loadBatchDetails()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">' +
+                    '<i class="fas fa-redo mr-2"></i>Retry' +
+                  '</button>' +
+                '</div>';
             }
           }
 
