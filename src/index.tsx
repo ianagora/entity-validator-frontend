@@ -116,6 +116,16 @@ app.get('/api/batch/:id/status', async (c) => {
   }
 })
 
+// Version check endpoint
+app.get('/api/version', (c) => {
+  return c.json({
+    version: '1.0.1-screening',
+    commit: '5cdb701',
+    features: ['screening_list', 'debug_endpoint', 'enhanced_logging'],
+    timestamp: new Date().toISOString()
+  })
+})
+
 // Get all batches
 app.get('/api/batches', async (c) => {
   try {
@@ -779,7 +789,6 @@ app.get('/item/:id', async (c) => {
                 \` : ''}
 
                 <!-- KYC/AML Screening Requirements -->
-                \${item.screening_list ? \`
                 <div class="card">
                   <h2 class="section-title">
                     <i class="fas fa-search-dollar mr-2"></i>KYC/AML Screening Requirements
@@ -787,9 +796,14 @@ app.get('/item/:id', async (c) => {
                   <p class="text-sm text-gray-600 mb-6">
                     Comprehensive list of persons and entities requiring screening based on UK AML regulations.
                   </p>
+                  <p class="text-xs text-gray-500 mb-4">
+                    <strong>Debug:</strong> screening_list exists = \${!!item.screening_list}, 
+                    type = \${typeof item.screening_list},
+                    keys = \${item.screening_list ? Object.keys(item.screening_list).join(', ') : 'none'}
+                  </p>
 
                   <!-- Entity -->
-                  \${item.screening_list.entity && item.screening_list.entity.length > 0 ? \`
+                  \${item.screening_list && item.screening_list.entity && item.screening_list.entity.length > 0 ? \`
                   <div class="mb-6">
                     <h3 class="text-lg font-semibold mb-3 flex items-center">
                       <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2">🏢</span>
@@ -1010,7 +1024,6 @@ app.get('/item/:id', async (c) => {
                     <p class="mt-1"><strong>Note:</strong> This screening list is based on public register data. Some information may require manual collection via client questionnaires or additional documentation.</p>
                   </div>
                 </div>
-                \` : ''}
               \`;
               
               console.log('[DEBUG] HTML template built, length:', htmlContent.length);
