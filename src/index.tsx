@@ -120,9 +120,9 @@ app.get('/api/batch/:id/status', async (c) => {
 app.get('/api/version', (c) => {
   return c.json({
     version: '1.0.1-screening',
-    commit: '5cdb701',
-    features: ['screening_list', 'debug_endpoint', 'enhanced_logging'],
-    timestamp: new Date().toISOString()
+    commit: '660005b',
+    features: ['screening_list', 'unconditional_render', 'debug_info'],
+    deployed: true
   })
 })
 
