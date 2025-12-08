@@ -168,6 +168,33 @@ app.get('/api/batch/:id/items', async (c) => {
   }
 })
 
+// Debug endpoint to test screening_list
+app.get('/api/debug/item/:id', async (c) => {
+  const itemId = c.req.param('id')
+  
+  try {
+    const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}`, {
+      headers: {
+        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
+      }
+    })
+    
+    const data = await response.json()
+    
+    return c.json({
+      has_screening_list: !!data.screening_list,
+      screening_list_type: typeof data.screening_list,
+      screening_list_keys: data.screening_list ? Object.keys(data.screening_list) : [],
+      entity_count: data.screening_list?.entity?.length || 0,
+      governance_count: data.screening_list?.governance_and_control?.length || 0,
+      ownership_chain_count: data.screening_list?.ownership_chain?.length || 0,
+      full_data: data.screening_list
+    })
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch item details', details: String(error) }, 500)
+  }
+})
+
 // ==================== WEB UI ROUTES ====================
 
 // Home / Dashboard
