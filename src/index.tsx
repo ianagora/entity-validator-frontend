@@ -1253,7 +1253,7 @@ app.get('/item/:id', async (c) => {
               // Company name with wrapping
               const maxCharsPerLine = 20;
               const words = node.name.split(' ');
-              const lines = [];
+              let lines = [];
               let currentLine = '';
               
               words.forEach(word => {
