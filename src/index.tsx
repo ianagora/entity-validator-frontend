@@ -560,8 +560,9 @@ app.get('/item/:id', async (c) => {
               // Debug: Log screening_list status
               console.log('[DEBUG] Has screening_list:', !!item.screening_list);
               console.log('[DEBUG] Screening categories:', item.screening_list ? Object.keys(item.screening_list) : 'none');
+              console.log('[DEBUG] Building HTML template...');
               
-              document.getElementById('content').innerHTML = \`
+              const htmlContent = \`
                 <!-- Header -->
                 <div class="card">
                   <h1 class="text-3xl font-bold text-gray-900 mb-4">
@@ -984,6 +985,12 @@ app.get('/item/:id', async (c) => {
                 </div>
                 \` : ''}
               \`;
+              
+              console.log('[DEBUG] HTML template built, length:', htmlContent.length);
+              console.log('[DEBUG] Includes screening section:', htmlContent.includes('KYC/AML Screening Requirements'));
+              
+              document.getElementById('content').innerHTML = htmlContent;
+              console.log('[DEBUG] HTML content set successfully');
               
             } catch (error) {
               document.getElementById('loading').classList.add('hidden');
