@@ -1143,7 +1143,7 @@ app.get('/item/:id', async (c) => {
             if (svg) {
               const g = svg.querySelector('g');
               if (g) {
-                g.setAttribute('transform', `scale(${currentZoom})`);
+                g.setAttribute('transform', 'scale(' + currentZoom + ')');
               }
             }
           }
@@ -1157,7 +1157,7 @@ app.get('/item/:id', async (c) => {
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `ownership-structure-${itemId}.svg`;
+            link.download = 'ownership-structure-' + itemId + '.svg';
             link.click();
             URL.revokeObjectURL(url);
           }
@@ -1170,7 +1170,7 @@ app.get('/item/:id', async (c) => {
             const links = [];
             
             function traverseTree(node, depth, x, y, parentId) {
-              const nodeId = `node-${nodes.length}`;
+              const nodeId = 'node-' + nodes.length;
               const isCompany = node.is_company !== false;
               
               nodes.push({
@@ -1236,7 +1236,7 @@ app.get('/item/:id', async (c) => {
               '#dc2626'  // red-600
             ];
             
-            let svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" style="border: 1px solid #e5e7eb; border-radius: 8px; background: #ffffff;">`;
+            let svg = '<svg width="' + width + '" height="' + height + '" xmlns="http://www.w3.org/2000/svg" style="border: 1px solid #e5e7eb; border-radius: 8px; background: #ffffff;">';
             svg += '<defs>';
             svg += '<marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#9ca3af" /></marker>';
             svg += '<filter id="shadow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceAlpha" stdDeviation="3"/><feOffset dx="0" dy="2" result="offsetblur"/><feComponentTransfer><feFuncA type="linear" slope="0.2"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
@@ -1255,13 +1255,13 @@ app.get('/item/:id', async (c) => {
                 
                 // Draw curved line
                 const midY = (sourceY + targetY) / 2;
-                svg += `<path d="M ${sourceX} ${sourceY} C ${sourceX} ${midY}, ${targetX} ${midY}, ${targetX} ${targetY}" stroke="#9ca3af" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>`;
+                svg += '<path d="M ' + sourceX + ' ' + sourceY + ' C ' + sourceX + ' ' + midY + ', ' + targetX + ' ' + midY + ', ' + targetX + ' ' + targetY + '" stroke="#9ca3af" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>';
                 
                 // Add percentage label on link if available
                 if (target.percentage > 0) {
                   const labelX = (sourceX + targetX) / 2;
                   const labelY = (sourceY + targetY) / 2 - 5;
-                  svg += `<text x="${labelX}" y="${labelY}" text-anchor="middle" font-size="11" fill="#6b7280" font-weight="600">${target.percentage.toFixed(1)}%</text>`;
+                  svg += '<text x="' + labelX + '" y="' + labelY + '" text-anchor="middle" font-size="11" fill="#6b7280" font-weight="600">' + target.percentage.toFixed(1) + '%</text>';
                 }
               }
             });
@@ -1274,26 +1274,26 @@ app.get('/item/:id', async (c) => {
               const textColor = node.depth === 0 ? '#ffffff' : '#1f2937';
               
               // Node box
-              svg += `<rect x="${node.x - 100}" y="${node.y - 35}" width="200" height="70" rx="8" ry="8" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2" filter="url(#shadow)" style="cursor: pointer;"/>`;
+              svg += '<rect x="' + (node.x - 100) + '" y="' + (node.y - 35) + '" width="200" height="70" rx="8" ry="8" fill="' + fillColor + '" stroke="' + strokeColor + '" stroke-width="2" filter="url(#shadow)" style="cursor: pointer;"/>';
               
               // Company icon
               const icon = node.isCompany ? '🏢' : '👤';
-              svg += `<text x="${node.x - 90}" y="${node.y - 10}" font-size="16">${icon}</text>`;
+              svg += '<text x="' + (node.x - 90) + '" y="' + (node.y - 10) + '" font-size="16">' + icon + '</text>';
               
               // Company name (truncate if too long)
               const maxNameLength = 24;
               const displayName = node.name.length > maxNameLength ? node.name.substring(0, maxNameLength) + '...' : node.name;
-              svg += `<text x="${node.x - 65}" y="${node.y - 10}" font-size="12" font-weight="600" fill="${textColor}">${escapeXml(displayName)}</text>`;
+              svg += '<text x="' + (node.x - 65) + '" y="' + (node.y - 10) + '" font-size="12" font-weight="600" fill="' + textColor + '">' + escapeXml(displayName) + '</text>';
               
               // Company number
               if (node.companyNumber) {
-                svg += `<text x="${node.x - 65}" y="${node.y + 5}" font-size="10" fill="${node.depth === 0 ? '#e5e7eb' : '#6b7280'}">${node.companyNumber}</text>`;
+                svg += '<text x="' + (node.x - 65) + '" y="' + (node.y + 5) + '" font-size="10" fill="' + (node.depth === 0 ? '#e5e7eb' : '#6b7280') + '">' + node.companyNumber + '</text>';
               }
               
               // Shares info
               if (node.shares > 0) {
-                const sharesText = `${node.shares.toLocaleString()} shares`;
-                svg += `<text x="${node.x - 65}" y="${node.y + 20}" font-size="9" fill="${node.depth === 0 ? '#d1d5db' : '#9ca3af'}">${sharesText}</text>`;
+                const sharesText = node.shares.toLocaleString() + ' shares';
+                svg += '<text x="' + (node.x - 65) + '" y="' + (node.y + 20) + '" font-size="9" fill="' + (node.depth === 0 ? '#d1d5db' : '#9ca3af') + '">' + sharesText + '</text>';
               }
             });
             
