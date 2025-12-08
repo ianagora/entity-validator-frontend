@@ -597,12 +597,13 @@ app.get('/item/:id', async (c) => {
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script>
-          console.log('[DEBUG] Page loaded, item ID: ${itemId}');
+          const itemId = ${JSON.stringify(itemId)};
+          console.log('[DEBUG] Page loaded, item ID:', itemId);
           
           async function loadItemDetails() {
             try {
               console.log('[DEBUG] Fetching item data...');
-              const response = await axios.get('/api/item/${itemId}');
+              const response = await axios.get('/api/item/' + itemId);
               console.log('[DEBUG] Response status:', response.status);
               const item = response.data;
               console.log('[DEBUG] Item data received:', item ? 'yes' : 'no');
