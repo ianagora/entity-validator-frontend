@@ -708,7 +708,7 @@ app.get('/item/:id', async (c) => {
                       <i class="fas fa-project-diagram mr-2"></i>Ownership Tree
                       \${item.ownership_tree ? '<span class="badge badge-success ml-2">Multi-Layer</span>' : ''}
                     </h3>
-                    <div id="ownership-tree-container"></div>
+                    <div id="ownership-tree-container" style="overflow-x: auto; overflow-y: visible; max-width: 100%;"></div>
                     <div class="mt-4 flex gap-2">
                       <button onclick="zoomIn()" class="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">
                         <i class="fas fa-search-plus"></i> Zoom In
@@ -1121,16 +1121,36 @@ app.get('/item/:id', async (c) => {
               return;
             }
             
-            const svgData = new XMLSerializer().serializeToString(svg);
-            const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = 'ownership-structure-' + itemId + '.svg';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
+            try {
+              // Clone the SVG to avoid modifying the original
+              const svgClone = svg.cloneNode(true);
+              
+              // Add XML declaration and namespace
+              const svgData = '<?xml version="1.0" encoding="UTF-8"?>\n' + 
+                              new XMLSerializer().serializeToString(svgClone);
+              
+              const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = 'ownership-structure-' + itemId + '.svg';
+              link.style.display = 'none';
+              document.body.appendChild(link);
+              
+              // Force click with a slight delay
+              setTimeout(() => {
+                link.click();
+                setTimeout(() => {
+                  document.body.removeChild(link);
+                  URL.revokeObjectURL(url);
+                }, 100);
+              }, 100);
+              
+              console.log('SVG download initiated');
+            } catch (error) {
+              console.error('SVG download failed:', error);
+              alert('Failed to download SVG: ' + error.message);
+            }
           }
           
           function buildRecursiveOwnershipTree(tree, depth = 0) {
@@ -1140,14 +1160,29 @@ app.get('/item/:id', async (c) => {
             const nodes = [];
             const links = [];
             
+            // Track seen companies to avoid duplicates
+            const seenCompanies = new Set();
+            
             function traverseTree(node, depth, x, y, parentId) {
               const nodeId = 'node-' + nodes.length;
               const isCompany = node.is_company !== false;
+              const companyNumber = node.company_number;
+              
+              // Check if this company has already been processed at a different level
+              // Skip if it's a duplicate (same company number appearing multiple times)
+              if (isCompany && companyNumber && seenCompanies.has(companyNumber) && depth > 0) {
+                console.log('Skipping duplicate company:', node.name, companyNumber);
+                return; // Skip this duplicate node
+              }
+              
+              if (isCompany && companyNumber) {
+                seenCompanies.add(companyNumber);
+              }
               
               nodes.push({
                 id: nodeId,
                 name: node.company_name || node.name,
-                companyNumber: node.company_number,
+                companyNumber: companyNumber,
                 percentage: node.percentage || (depth === 0 ? 100 : 0),
                 shares: node.shares_held || 0,
                 isCompany: isCompany,
@@ -1211,7 +1246,7 @@ app.get('/item/:id', async (c) => {
               '#dc2626'  // red-600
             ];
             
-            let svg = '<svg width="' + width + '" height="' + height + '" xmlns="http://www.w3.org/2000/svg" style="border: 1px solid #e5e7eb; border-radius: 8px; background: #ffffff;">';
+            let svg = '<svg width="' + width + '" height="' + height + '" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + width + ' ' + height + '" style="border: 1px solid #e5e7eb; border-radius: 8px; background: #ffffff; display: block; margin: 0 auto; max-width: 100%;">';
             svg += '<defs>';
             svg += '<marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#9ca3af" /></marker>';
             svg += '<filter id="shadow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceAlpha" stdDeviation="3"/><feOffset dx="0" dy="2" result="offsetblur"/><feComponentTransfer><feFuncA type="linear" slope="0.2"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
