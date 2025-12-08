@@ -618,6 +618,35 @@ app.get('/item/:id', async (c) => {
                   </div>
                 </div>
 
+                <!-- Enrichment Metrics Card -->
+                \${item.shareholders && item.shareholders.enrichment_metadata ? \`
+                <div class="card" style="background: linear-gradient(to right, #eff6ff, #eef2ff); border-left: 4px solid #6366f1;">
+                  <h3 class="text-lg font-semibold mb-4 text-gray-800">
+                    <i class="fas fa-chart-line mr-2 text-indigo-600"></i>Enrichment Metrics
+                  </h3>
+                  <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                      <p class="text-xs text-gray-600 uppercase tracking-wide mb-1">Duration</p>
+                      <p class="text-3xl font-bold text-indigo-600">\${item.shareholders.enrichment_metadata.enrichment_duration_seconds}s</p>
+                    </div>
+                    <div class="text-center">
+                      <p class="text-xs text-gray-600 uppercase tracking-wide mb-1">Tree Depth</p>
+                      <p class="text-3xl font-bold text-indigo-600">\${item.shareholders.enrichment_metadata.tree_depth}</p>
+                      <p class="text-xs text-gray-500">layers</p>
+                    </div>
+                    <div class="text-center">
+                      <p class="text-xs text-gray-600 uppercase tracking-wide mb-1">Total Entities</p>
+                      <p class="text-3xl font-bold text-indigo-600">\${item.shareholders.enrichment_metadata.total_entities_in_tree}</p>
+                      <p class="text-xs text-gray-500">companies/individuals</p>
+                    </div>
+                    <div class="text-center">
+                      <p class="text-xs text-gray-600 uppercase tracking-wide mb-1">Completed</p>
+                      <p class="text-sm font-medium text-gray-700">\${item.shareholders.enrichment_metadata.completed_at}</p>
+                    </div>
+                  </div>
+                </div>
+                \` : ''}
+
                 <!-- Company Profile -->
                 \${item.profile && Object.keys(item.profile).length > 0 ? \`
                 <div class="card">
@@ -656,6 +685,19 @@ app.get('/item/:id', async (c) => {
                       \${item.ownership_tree ? '<span class="badge badge-success ml-2">Multi-Layer</span>' : ''}
                     </h3>
                     <div class="tree">\${shareholderTree}</div>
+                    <div class="mt-3 p-3 bg-gray-50 rounded text-xs">
+                      <p class="font-semibold text-gray-700 mb-2">Color Legend (by depth):</p>
+                      <div class="flex flex-wrap gap-3">
+                        <span style="color: #1e40af;">● Layer 0 (Root)</span>
+                        <span style="color: #3b82f6;">● Layer 1</span>
+                        <span style="color: #059669;">● Layer 2</span>
+                        <span style="color: #10b981;">● Layer 3</span>
+                        <span style="color: #f59e0b;">● Layer 4</span>
+                        <span style="color: #f97316;">● Layer 5</span>
+                        <span style="color: #ef4444;">● Layer 6</span>
+                        <span style="color: #dc2626;">● Layer 7+</span>
+                      </div>
+                    </div>
                   </div>
                   
                   <!-- Ownership Chains (if available) -->
@@ -771,7 +813,6 @@ app.get('/item/:id', async (c) => {
                 \${item.pscs && item.pscs.items && item.pscs.items.length > 0 ? \`
                 <div class="card">
                   <h2 class="section-title"><i class="fas fa-user-shield mr-2"></i>Persons with Significant Control (\${item.pscs.items.length})</h2>
-                  <p class="text-xs text-red-600 font-bold mb-2">🔴 DEPLOYMENT TEST MARKER - Commit 2e7d7e7 - If you see this, new code is deployed!</p>
                   <div class="space-y-3">
                     \${item.pscs.items.map(psc => \`
                       <div class="p-3 bg-gray-50 rounded">
@@ -789,25 +830,29 @@ app.get('/item/:id', async (c) => {
                 </div>
                 \` : ''}
 
-                <!-- 🔴 DEPLOYMENT MARKER - Line 791 - Screening Section Starts Here -->
-                <div style="background: #fee; border: 2px solid red; padding: 10px; margin: 20px 0;">
-                  <p style="color: red; font-weight: bold;">🔴 DEPLOYMENT TEST: If you see this red box, the screening section code is executing!</p>
-                  <p style="font-size: 12px;">Commit: 2e7d7e7</p>
-                </div>
-
                 <!-- KYC/AML Screening Requirements -->
                 <div class="card">
-                  <h2 class="section-title">
-                    <i class="fas fa-search-dollar mr-2"></i>KYC/AML Screening Requirements
-                  </h2>
-                  <p class="text-sm text-gray-600 mb-6">
-                    Comprehensive list of persons and entities requiring screening based on UK AML regulations.
-                  </p>
-                  <p class="text-xs text-gray-500 mb-4">
-                    <strong>Debug:</strong> screening_list exists = \${!!item.screening_list}, 
-                    type = \${typeof item.screening_list},
-                    keys = \${item.screening_list ? Object.keys(item.screening_list).join(', ') : 'none'}
-                  </p>
+                  <div class="flex justify-between items-start mb-4">
+                    <div>
+                      <h2 class="section-title mb-2">
+                        <i class="fas fa-search-dollar mr-2"></i>KYC/AML Screening Requirements
+                      </h2>
+                      <p class="text-sm text-gray-600">
+                        Comprehensive list of persons and entities requiring screening based on UK AML regulations.
+                      </p>
+                    </div>
+                    <div class="flex gap-2">
+                      <a href="/api/item/\${item.id}/screening-export.csv" 
+                         class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                         download>
+                        <i class="fas fa-download mr-2"></i>Download CSV
+                      </a>
+                      <button onclick="window.print()" 
+                              class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium">
+                        <i class="fas fa-print mr-2"></i>Print
+                      </button>
+                    </div>
+                  </div>
 
                   <!-- Entity -->
                   \${item.screening_list && item.screening_list.entity && item.screening_list.entity.length > 0 ? \`
@@ -1050,18 +1095,32 @@ app.get('/item/:id', async (c) => {
           function buildRecursiveOwnershipTree(tree, depth = 0, prefix = '', isLast = true) {
             if (!tree) return 'No ownership data available';
             
+            // Color coding by depth
+            const depthColors = {
+              0: '#1e40af', // blue-800 (root)
+              1: '#3b82f6', // blue-500
+              2: '#059669', // green-600
+              3: '#10b981', // green-500
+              4: '#f59e0b', // yellow-500
+              5: '#f97316', // orange-500
+              6: '#ef4444', // red-500
+              7: '#dc2626', // red-600
+              8: '#991b1b'  // red-800 (very deep)
+            };
+            const color = depthColors[Math.min(depth, 8)] || '#6b7280';
+            
             let result = '';
             const indent = '  '.repeat(depth);
             
             // Root company
             if (depth === 0) {
-              result += '🏢 ' + tree.company_name + ' (' + tree.company_number + ')\\n';
-              result += '│\\n';
+              result += \`<span style="color: \${color}; font-weight: bold;">🏢 \${tree.company_name} (\${tree.company_number})</span>\\n\`;
+              result += '<span style="color: #9ca3af;">│</span>\\n';
             }
             
             const shareholders = tree.shareholders || [];
             if (shareholders.length === 0) {
-              return result + indent + '└── No shareholders found\\n';
+              return result + indent + '<span style="color: #9ca3af;">└── No shareholders found</span>\\n';
             }
             
             shareholders.forEach((sh, idx) => {
@@ -1073,11 +1132,16 @@ app.get('/item/:id', async (c) => {
               const shares = (sh.shares_held || 0).toLocaleString();
               const icon = sh.is_company ? '🏢' : '👤';
               
-              result += prefix + connector + icon + ' ' + sh.name + ' (' + percentage + '% - ' + shares + ' shares)';
+              // Color the connector and tree lines
+              const styledPrefix = prefix.replace(/│/g, '<span style="color: #9ca3af;">│</span>');
+              const styledConnector = \`<span style="color: #9ca3af;">\${connector}</span>\`;
+              
+              result += styledPrefix + styledConnector + \`<span style="color: \${color}; font-weight: 500;">\${icon} \${sh.name}</span>\`;
+              result += \` <span style="color: #6b7280;">(\${percentage}% - \${shares} shares)</span>\`;
               
               // Show company number if available
               if (sh.company_number) {
-                result += ' [' + sh.company_number + ']';
+                result += \` <span style="color: #9ca3af; font-size: 0.9em;">[</span><span style="color: #3b82f6;">\${sh.company_number}</span><span style="color: #9ca3af; font-size: 0.9em;">]</span>\`;
               }
               
               result += '\\n';
