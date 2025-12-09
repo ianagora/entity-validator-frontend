@@ -1293,7 +1293,7 @@ app.get('/item/:id', async (c) => {
             
             // Calculate final SVG dimensions
             const width = maxX - minX + xOffset + 100;
-            const height = Math.max(400, maxY);
+            const height = Math.max(400, maxY + 150);  // Add 150px bottom margin to prevent cutoff
             
             const depthColors = [
               '#1e40af', // blue-800 (root)
