@@ -725,74 +725,6 @@ app.get('/item/:id', async (c) => {
                       </button>
                     </div>
                   </div>
-                  
-                  <!-- Ownership Chains (if available) -->
-                  \${item.ownership_chains && item.ownership_chains.length > 0 ? \`
-                  <div class="mb-6">
-                    <h3 class="text-lg font-semibold mb-3">
-                      <i class="fas fa-route mr-2"></i>Ultimate Ownership Chains
-                    </h3>
-                    <p class="text-sm text-gray-600 mb-3">
-                      These chains show the path from ultimate beneficial owners to the target company.
-                    </p>
-                    <div class="space-y-3">
-                      \${item.ownership_chains.map((chain, idx) => \`
-                        <div class="bg-gray-50 p-4 rounded-lg border-l-4 border-blue-500">
-                          <div class="font-semibold text-gray-900 mb-2">
-                            Chain #\${idx + 1}: \${chain.ultimate_owner} 
-                            <span class="text-sm font-normal text-gray-600">
-                              (\${chain.total_percentage.toFixed(2)}% - \${chain.chain_length} layers)
-                            </span>
-                          </div>
-                          <div class="text-sm text-gray-700 ml-4">
-                            \${chain.ownership_chain.map((owner, ownerIdx) => \`
-                              <div class="flex items-center gap-2 py-1">
-                                <span>\${owner.is_company ? '🏢' : '👤'}</span>
-                                <span class="font-medium">\${owner.name}</span>
-                                <span class="text-gray-500">(\${owner.percentage.toFixed(2)}%)</span>
-                                \${owner.company_number ? \`<span class="text-xs text-gray-400">[\${owner.company_number}]</span>\` : ''}
-                                \${ownerIdx < chain.ownership_chain.length - 1 ? '<i class="fas fa-arrow-down text-gray-400 ml-2"></i>' : ''}
-                              </div>
-                            \`).join('')}
-                          </div>
-                        </div>
-                      \`).join('')}
-                    </div>
-                  </div>
-                  \` : ''}
-                  
-                  <!-- Shareholder Table -->
-                  <div>
-                    <h3 class="text-lg font-semibold mb-3">Shareholder Details</h3>
-                    <div class="overflow-x-auto">
-                      <table class="w-full text-sm">
-                        <thead class="bg-gray-50">
-                          <tr>
-                            <th class="px-4 py-2 text-left">Name</th>
-                            <th class="px-4 py-2 text-left">Shares</th>
-                            <th class="px-4 py-2 text-left">Percentage</th>
-                            <th class="px-4 py-2 text-left">Class</th>
-                            <th class="px-4 py-2 text-left">Type</th>
-                          </tr>
-                        </thead>
-                        <tbody class="divide-y">
-                          \${item.shareholders.map(sh => \`
-                            <tr>
-                              <td class="px-4 py-2 font-medium">\${sh.name}</td>
-                              <td class="px-4 py-2">\${(sh.shares_held || 0).toLocaleString()}</td>
-                              <td class="px-4 py-2">\${sh.percentage || 0}%</td>
-                              <td class="px-4 py-2">\${sh.share_class || '-'}</td>
-                              <td class="px-4 py-2">
-                                \${isParentCompany(sh.name) ? 
-                                  '<span class="badge badge-warning">Parent Company</span>' : 
-                                  '<span class="badge badge-info">Individual</span>'}
-                              </td>
-                            </tr>
-                          \`).join('')}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
                 </div>
                 \` : item.enrich_status === 'done' ? \`
                 <div class="card">
@@ -801,60 +733,7 @@ app.get('/item/:id', async (c) => {
                 </div>
                 \` : ''}
 
-                <!-- Officers -->
-                \${item.officers && item.officers.items && item.officers.items.length > 0 ? \`
-                <div class="card">
-                  <h2 class="section-title"><i class="fas fa-users mr-2"></i>Officers (\${item.officers.items.length})</h2>
-                  <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                      <thead class="bg-gray-50">
-                        <tr>
-                          <th class="px-4 py-2 text-left">Name</th>
-                          <th class="px-4 py-2 text-left">Role</th>
-                          <th class="px-4 py-2 text-left">Appointed</th>
-                          <th class="px-4 py-2 text-left">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody class="divide-y">
-                        \${item.officers.items.slice(0, 10).map(officer => \`
-                          <tr>
-                            <td class="px-4 py-2">\${officer.name}</td>
-                            <td class="px-4 py-2">\${officer.officer_role || '-'}</td>
-                            <td class="px-4 py-2">\${officer.appointed_on || '-'}</td>
-                            <td class="px-4 py-2">
-                              <span class="badge \${officer.resigned_on ? 'badge-warning' : 'badge-success'}">
-                                \${officer.resigned_on ? 'Resigned' : 'Active'}
-                              </span>
-                            </td>
-                          </tr>
-                        \`).join('')}
-                      </tbody>
-                    </table>
-                  </div>
-                  \${item.officers.items.length > 10 ? \`<p class="text-sm text-gray-500 mt-2">Showing 10 of \${item.officers.items.length} officers</p>\` : ''}
-                </div>
-                \` : ''}
 
-                <!-- PSCs (Persons with Significant Control) -->
-                \${item.pscs && item.pscs.items && item.pscs.items.length > 0 ? \`
-                <div class="card">
-                  <h2 class="section-title"><i class="fas fa-user-shield mr-2"></i>Persons with Significant Control (\${item.pscs.items.length})</h2>
-                  <div class="space-y-3">
-                    \${item.pscs.items.map(psc => \`
-                      <div class="p-3 bg-gray-50 rounded">
-                        <p class="font-semibold">\${psc.name}</p>
-                        \${psc.natures_of_control ? \`
-                        <p class="text-sm text-gray-600 mt-1">
-                          <i class="fas fa-check-circle text-green-600 mr-1"></i>
-                          \${Array.isArray(psc.natures_of_control) ? psc.natures_of_control.join(', ') : psc.natures_of_control}
-                        </p>
-                        \` : ''}
-                        \${psc.notified_on ? \`<p class="text-xs text-gray-500 mt-1">Notified: \${psc.notified_on}</p>\` : ''}
-                      </div>
-                    \`).join('')}
-                  </div>
-                </div>
-                \` : ''}
 
                 <!-- KYC/AML Screening Requirements -->
                 <div class="card">
@@ -880,188 +759,170 @@ app.get('/item/:id', async (c) => {
                     </div>
                   </div>
 
-                  <!-- Entities & Governance (Merged) -->
-                  \${((item.screening_list && item.screening_list.entity && item.screening_list.entity.length > 0) || (item.screening_list && item.screening_list.governance_and_control && item.screening_list.governance_and_control.length > 0)) ? \`
+                  <!-- Consolidated Screening List -->
+                  \${(() => {
+                    // Normalize and consolidate all individuals and entities from the complete ownership structure
+                    const personMap = new Map(); // Use Map to track unique individuals by name
+                    
+                    // Helper function to add or merge person data
+                    const addPerson = (name, data) => {
+                      const normalizedName = name.trim().toUpperCase();
+                      if (personMap.has(normalizedName)) {
+                        const existing = personMap.get(normalizedName);
+                        // Merge roles
+                        if (data.role && !existing.roles.includes(data.role)) {
+                          existing.roles.push(data.role);
+                        }
+                        // Update other fields if not present
+                        existing.nationality = existing.nationality || data.nationality;
+                        existing.dob = existing.dob || data.dob;
+                        if (data.linkedEntity && !existing.linkedEntities.includes(data.linkedEntity)) {
+                          existing.linkedEntities.push(data.linkedEntity);
+                        }
+                        existing.isCompany = existing.isCompany || data.isCompany;
+                        existing.companyNumber = existing.companyNumber || data.companyNumber;
+                      } else {
+                        personMap.set(normalizedName, {
+                          name: name.trim(),
+                          roles: data.role ? [data.role] : [],
+                          nationality: data.nationality || null,
+                          dob: data.dob || null,
+                          linkedEntities: data.linkedEntity ? [data.linkedEntity] : [],
+                          isCompany: data.isCompany || false,
+                          companyNumber: data.companyNumber || null
+                        });
+                      }
+                    };
+                    
+                    // Extract target company name for reference
+                    const targetCompanyName = item.input_name || item.profile?.company_name || 'Target Company';
+                    
+                    // 1. Process ownership_chain (includes officers, directors, PSCs from all levels)
+                    if (item.screening_list?.ownership_chain) {
+                      item.screening_list.ownership_chain.forEach(entry => {
+                        if (!entry.is_company) {
+                          // Find linked entity from category
+                          let linkedEntity = targetCompanyName;
+                          if (entry.category) {
+                            const match = entry.category.match(/of (.+)$/);
+                            if (match) {
+                              linkedEntity = match[1];
+                            }
+                          }
+                          
+                          addPerson(entry.name, {
+                            role: entry.role,
+                            linkedEntity: linkedEntity,
+                            isCompany: false
+                          });
+                        } else {
+                          // Add corporate entities too
+                          addPerson(entry.name, {
+                            role: entry.role,
+                            linkedEntity: targetCompanyName,
+                            isCompany: true,
+                            companyNumber: entry.company_number
+                          });
+                        }
+                      });
+                    }
+                    
+                    // 2. Process governance_and_control (directors, secretaries, PSCs from target company)
+                    if (item.screening_list?.governance_and_control) {
+                      item.screening_list.governance_and_control.forEach(person => {
+                        addPerson(person.name, {
+                          role: person.role,
+                          nationality: person.nationality,
+                          dob: person.dob,
+                          linkedEntity: targetCompanyName,
+                          isCompany: false
+                        });
+                      });
+                    }
+                    
+                    // 3. Process UBOs (ultimate beneficial owners)
+                    if (item.screening_list?.ubos) {
+                      item.screening_list.ubos.forEach(ubo => {
+                        addPerson(ubo.name, {
+                          role: ubo.role,
+                          linkedEntity: targetCompanyName,
+                          isCompany: false
+                        });
+                      });
+                    }
+                    
+                    // 4. Process trusts
+                    if (item.screening_list?.trusts) {
+                      item.screening_list.trusts.forEach(trust => {
+                        addPerson(trust.name, {
+                          role: trust.role,
+                          linkedEntity: targetCompanyName,
+                          isCompany: false
+                        });
+                      });
+                    }
+                    
+                    // 5. Process entities
+                    if (item.screening_list?.entity) {
+                      item.screening_list.entity.forEach(entity => {
+                        addPerson(entity.name, {
+                          role: entity.type,
+                          linkedEntity: 'N/A',
+                          isCompany: true,
+                          companyNumber: entity.company_number
+                        });
+                      });
+                    }
+                    
+                    // Convert Map to sorted array
+                    const consolidatedList = Array.from(personMap.values()).sort((a, b) => {
+                      // Sort companies first, then individuals alphabetically
+                      if (a.isCompany !== b.isCompany) return a.isCompany ? -1 : 1;
+                      return a.name.localeCompare(b.name);
+                    });
+                    
+                    return consolidatedList.length > 0 ? \`
                   <div class="mb-6">
                     <h3 class="text-lg font-semibold mb-3 flex items-center">
-                      <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2">🏢</span>
-                      Entities & Governance
+                      <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2">📋</span>
+                      Consolidated Screening List
                     </h3>
-                    <p class="text-sm text-gray-600 mb-3">All entities, directors, company secretary, and PSCs from the complete ownership structure</p>
+                    <p class="text-sm text-gray-600 mb-3">
+                      All entities, directors, company secretaries, officers, and PSCs from the complete ownership structure.
+                      <br><span class="text-xs">Normalized to remove duplicates • Total: \${consolidatedList.length} unique entries</span>
+                    </p>
                     <div class="overflow-x-auto">
                       <table class="w-full text-sm border">
                         <thead class="bg-gray-50">
                           <tr>
                             <th class="px-4 py-2 text-left border">Name</th>
-                            <th class="px-4 py-2 text-left border">Type/Role</th>
-                            <th class="px-4 py-2 text-left border">Category</th>
-                            <th class="px-4 py-2 text-left border">Company Number</th>
-                            <th class="px-4 py-2 text-left border">Status/Details</th>
+                            <th class="px-4 py-2 text-left border">Role(s)</th>
+                            <th class="px-4 py-2 text-left border">Nationality</th>
+                            <th class="px-4 py-2 text-left border">DOB</th>
+                            <th class="px-4 py-2 text-left border">Linked Entity</th>
                           </tr>
                         </thead>
                         <tbody>
-                          \${(item.screening_list.entity || []).map(entity => \`
-                            <tr class="hover:bg-gray-50">
-                              <td class="px-4 py-2 border font-medium">\${entity.name}</td>
-                              <td class="px-4 py-2 border">
-                                <span class="badge badge-info">\${entity.type}</span>
-                              </td>
-                              <td class="px-4 py-2 border text-xs">Entity</td>
-                              <td class="px-4 py-2 border">\${entity.company_number || '-'}</td>
-                              <td class="px-4 py-2 border">
-                                <span class="badge \${entity.status === 'active' ? 'badge-success' : 'badge-warning'}">
-                                  \${entity.status}
-                                </span>
-                              </td>
-                            </tr>
-                          \`).join('')}
-                          \${(item.screening_list.governance_and_control || []).map(person => \`
-                            <tr class="hover:bg-gray-50">
-                              <td class="px-4 py-2 border font-medium">\${person.name}</td>
-                              <td class="px-4 py-2 border">
-                                <span class="badge \${person.category === 'Directors' ? 'badge-info' : person.category === 'PSCs' ? 'badge-error' : 'badge-secondary'}">
-                                  \${person.role}
-                                </span>
-                              </td>
-                              <td class="px-4 py-2 border text-xs">\${person.category}</td>
-                              <td class="px-4 py-2 border">-</td>
-                              <td class="px-4 py-2 border text-xs">
-                                \${person.appointed_on ? \`Appointed: \${person.appointed_on}<br>\` : ''}
-                                \${person.nationality ? \`Nationality: \${person.nationality}<br>\` : ''}
-                                \${person.dob ? \`DOB: \${person.dob}\` : ''}
-                              </td>
-                            </tr>
-                          \`).join('')}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                  \` : ''}
-
-                  <!-- Ownership Chain -->
-                  \${item.screening_list.ownership_chain && item.screening_list.ownership_chain.length > 0 ? \`
-                  <div class="mb-6">
-                    <h3 class="text-lg font-semibold mb-3 flex items-center">
-                      <span class="bg-green-100 text-green-800 px-2 py-1 rounded mr-2">🔗</span>
-                      Ownership Chain
-                    </h3>
-                    <p class="text-sm text-gray-600 mb-3">Direct shareholders, parents, grandparents, ultimate parents (≥10%)</p>
-                    <div class="overflow-x-auto">
-                      <table class="w-full text-sm border">
-                        <thead class="bg-gray-50">
-                          <tr>
-                            <th class="px-4 py-2 text-left border">Name</th>
-                            <th class="px-4 py-2 text-left border">Role</th>
-                            <th class="px-4 py-2 text-left border">Shareholding</th>
-                            <th class="px-4 py-2 text-left border">Company Number</th>
-                            <th class="px-4 py-2 text-left border">Category</th>
-                            <th class="px-4 py-2 text-left border">Layer</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          \${item.screening_list.ownership_chain.map(owner => {
-                            const depthColors = {
-                              0: 'bg-green-50',
-                              1: 'bg-yellow-50',
-                              2: 'bg-orange-50'
-                            };
-                            const depthColor = depthColors[owner.depth] || 'bg-red-50';
-                            return \`
-                            <tr class="hover:bg-gray-50 \${depthColor}">
+                          \${consolidatedList.map(person => \`
+                            <tr class="hover:bg-gray-50 \${person.isCompany ? 'bg-blue-50' : ''}">
                               <td class="px-4 py-2 border font-medium">
-                                \${owner.is_company ? '🏢' : '👤'} \${owner.name}
+                                \${person.isCompany ? '🏢' : '👤'} \${person.name}
+                                \${person.companyNumber ? \`<br><span class="text-xs text-gray-500">\${person.companyNumber}</span>\` : ''}
                               </td>
-                              <td class="px-4 py-2 border">\${owner.role}</td>
-                              <td class="px-4 py-2 border font-semibold text-green-700">\${owner.shareholding}</td>
-                              <td class="px-4 py-2 border text-xs">\${owner.company_number || '-'}</td>
-                              <td class="px-4 py-2 border text-xs">\${owner.category}</td>
-                              <td class="px-4 py-2 border text-center">
-                                <span class="badge">\${owner.depth}</span>
-                              </td>
-                            </tr>
-                            \`;
-                          }).join('')}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                  \` : ''}
-
-                  <!-- UBOs -->
-                  \${item.screening_list.ubos && item.screening_list.ubos.length > 0 ? \`
-                  <div class="mb-6">
-                    <h3 class="text-lg font-semibold mb-3 flex items-center">
-                      <span class="bg-red-100 text-red-800 px-2 py-1 rounded mr-2">⭐</span>
-                      Ultimate Beneficial Owners (UBOs)
-                    </h3>
-                    <p class="text-sm text-gray-600 mb-3">Individuals with ≥10% indirect ownership or control</p>
-                    <div class="overflow-x-auto">
-                      <table class="w-full text-sm border">
-                        <thead class="bg-red-50">
-                          <tr>
-                            <th class="px-4 py-2 text-left border">Name</th>
-                            <th class="px-4 py-2 text-left border">Role</th>
-                            <th class="px-4 py-2 text-left border">Shareholding</th>
-                            <th class="px-4 py-2 text-left border">Shares Held</th>
-                            <th class="px-4 py-2 text-left border">Type</th>
-                            <th class="px-4 py-2 text-left border">Layer</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          \${item.screening_list.ubos.map(ubo => \`
-                            <tr class="hover:bg-red-50 bg-yellow-50">
-                              <td class="px-4 py-2 border font-bold">👤 \${ubo.name}</td>
-                              <td class="px-4 py-2 border">\${ubo.role}</td>
-                              <td class="px-4 py-2 border font-semibold text-red-700">\${ubo.shareholding}</td>
-                              <td class="px-4 py-2 border">\${ubo.shares_held ? ubo.shares_held.toLocaleString() : '-'}</td>
-                              <td class="px-4 py-2 border text-xs">
-                                \${ubo.indirect_ownership ? '<span class="badge badge-warning">Indirect</span>' : '<span class="badge badge-info">Control</span>'}
-                              </td>
-                              <td class="px-4 py-2 border text-center">
-                                <span class="badge">\${ubo.depth || 0}</span>
-                              </td>
-                            </tr>
-                          \`).join('')}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                  \` : ''}
-
-                  <!-- Trusts -->
-                  \${item.screening_list.trusts && item.screening_list.trusts.length > 0 ? \`
-                  <div class="mb-6">
-                    <h3 class="text-lg font-semibold mb-3 flex items-center">
-                      <span class="bg-indigo-100 text-indigo-800 px-2 py-1 rounded mr-2">📋</span>
-                      Trusts
-                    </h3>
-                    <p class="text-sm text-gray-600 mb-3">Settlors, Trustees, Protectors, Beneficiaries</p>
-                    <div class="overflow-x-auto">
-                      <table class="w-full text-sm border">
-                        <thead class="bg-gray-50">
-                          <tr>
-                            <th class="px-4 py-2 text-left border">Name</th>
-                            <th class="px-4 py-2 text-left border">Role</th>
-                            <th class="px-4 py-2 text-left border">Shareholding</th>
-                            <th class="px-4 py-2 text-left border">Category</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          \${item.screening_list.trusts.map(trust => \`
-                            <tr class="hover:bg-gray-50 bg-purple-50">
-                              <td class="px-4 py-2 border font-medium">\${trust.name}</td>
                               <td class="px-4 py-2 border">
-                                <span class="badge badge-secondary">\${trust.role}</span>
+                                \${person.roles.map(role => \`<span class="badge badge-info mr-1 mb-1">\${role}</span>\`).join('')}
                               </td>
-                              <td class="px-4 py-2 border">\${trust.shareholding || '-'}</td>
-                              <td class="px-4 py-2 border text-xs">\${trust.category}</td>
+                              <td class="px-4 py-2 border text-xs">\${person.nationality || '-'}</td>
+                              <td class="px-4 py-2 border text-xs">\${person.dob || '-'}</td>
+                              <td class="px-4 py-2 border text-xs">\${person.linkedEntities.join(', ') || '-'}</td>
                             </tr>
                           \`).join('')}
                         </tbody>
                       </table>
                     </div>
                   </div>
-                  \` : ''}
+                    \` : '<p class="text-gray-600">No screening data available.</p>';
+                  })()}
 
                   <div class="mt-4 p-3 bg-gray-50 rounded text-xs text-gray-600">
                     <p><strong>Data Sources:</strong> Companies House API, PSC Register, Ownership Tree Analysis</p>
