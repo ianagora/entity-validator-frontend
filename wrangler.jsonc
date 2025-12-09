@@ -5,6 +5,9 @@
   "pages_build_output_dir": "./dist",
   "compatibility_flags": ["nodejs_compat"],
   
+  // Note: Project name on Cloudflare Pages is "entity-validator"
+  // Deploy with: npx wrangler pages deploy dist --project-name entity-validator
+  
   // Environment variables (set via Cloudflare Dashboard for production)
   // BACKEND_API_URL and BACKEND_API_KEY are configured via Cloudflare Pages Settings
   "vars": {
