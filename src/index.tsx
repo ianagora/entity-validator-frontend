@@ -1271,10 +1271,17 @@ app.get('/item/:id', async (c) => {
           function createOwnershipSVG(nodes, links) {
             if (nodes.length === 0) return '<p class="text-gray-500">No ownership data</p>';
             
-            // Calculate SVG dimensions
-            const maxX = Math.max(...nodes.map(n => n.x)) + 150;
+            // Calculate actual bounds of the tree
+            const minX = Math.min(...nodes.map(n => n.x)) - 100; // Left padding
+            const maxX = Math.max(...nodes.map(n => n.x)) + 100; // Right padding
             const maxY = Math.max(...nodes.map(n => n.y)) + 100;
-            const width = Math.max(800, maxX);
+            
+            // Shift all nodes to prevent cutoff (add 50px left margin)
+            const xOffset = minX < 50 ? 50 - minX : 0;
+            nodes.forEach(n => n.x += xOffset);
+            
+            // Calculate final SVG dimensions
+            const width = maxX - minX + xOffset + 100;
             const height = Math.max(400, maxY);
             
             const depthColors = [
