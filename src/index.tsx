@@ -1173,14 +1173,14 @@ app.get('/item/:id', async (c) => {
               // Create unique identifier for ALL nodes (prevents duplicate rendering)
               // - Companies: use company number
               // - Individuals: use name + position to ensure uniqueness
-              const nodeKey = companyNumber || `${nodeName}-${x}-${y}`;
+              const nodeKey = companyNumber || (nodeName + '-' + x + '-' + y);
               
               // DEBUG: Log each node being processed
-              console.log(`[TREE] Depth ${depth}: Processing "${nodeName}" (${companyNumber || 'individual'}) at (${x},${y}) - Parent: ${parentId || 'ROOT'}`);
+              console.log('[TREE] Depth ' + depth + ': Processing "' + nodeName + '" (' + (companyNumber || 'individual') + ') at (' + x + ',' + y + ') - Parent: ' + (parentId || 'ROOT'));
               
               // Check if this node has already been processed (prevents duplicates)
               if (seenCompanies.has(nodeKey)) {
-                console.log(`[TREE] ⚠️ Skipping duplicate node: ${nodeName} (${nodeKey})`);
+                console.log('[TREE] ⚠️ Skipping duplicate node: ' + nodeName + ' (' + nodeKey + ')');
                 return;
               }
               
@@ -1210,7 +1210,7 @@ app.get('/item/:id', async (c) => {
               
               // DEBUG: Log children being processed
               if (allChildren.length > 0) {
-                console.log(`[TREE]   └─ ${nodeName} has ${allChildren.length} children:`, allChildren.map(c => c.company_name || c.name));
+                console.log('[TREE]   └─ ' + nodeName + ' has ' + allChildren.length + ' children:', allChildren.map(c => c.company_name || c.name));
               }
               
               if (allChildren.length > 0) {
