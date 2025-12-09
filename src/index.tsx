@@ -1168,6 +1168,25 @@ app.get('/item/:id', async (c) => {
             console.log('[TREE] Starting tree traversal...');
             console.log('[TREE] ========================================');
             
+            // Calculate subtree width recursively
+            function getSubtreeWidth(node) {
+              const shareholders = node.shareholders || [];
+              const children = node.children || [];
+              const allChildren = [...shareholders, ...children];
+              
+              if (allChildren.length === 0) {
+                return 250; // Leaf node width
+              }
+              
+              // Sum of all children's widths
+              let totalWidth = 0;
+              allChildren.forEach(child => {
+                totalWidth += getSubtreeWidth(child);
+              });
+              
+              return Math.max(250, totalWidth); // At least 250px wide
+            }
+            
             function traverseTree(node, depth, x, y, parentId) {
               const nodeId = 'node-' + nodes.length;
               const isCompany = node.is_company !== false;
@@ -1219,12 +1238,18 @@ app.get('/item/:id', async (c) => {
               
               if (allChildren.length > 0) {
                 const childY = y + 150;
-                const totalWidth = allChildren.length * 250;
-                const startX = x - totalWidth / 2 + 125;
+                
+                // Calculate each child's width and position them with proper spacing
+                let currentX = x;
+                const childWidths = allChildren.map(child => getSubtreeWidth(child));
+                const totalWidth = childWidths.reduce((a, b) => a + b, 0);
+                currentX = x - totalWidth / 2;
                 
                 allChildren.forEach((sh, idx) => {
-                  const childX = startX + idx * 250;
+                  const childWidth = childWidths[idx];
+                  const childX = currentX + childWidth / 2;
                   traverseTree(sh, depth + 1, childX, childY, nodeId);
+                  currentX += childWidth;
                 });
               }
             }
