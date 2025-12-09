@@ -1168,11 +1168,15 @@ app.get('/item/:id', async (c) => {
               const nodeId = 'node-' + nodes.length;
               const isCompany = node.is_company !== false;
               const companyNumber = node.company_number;
+              const nodeName = node.company_name || node.name;
+              
+              // DEBUG: Log each node being processed
+              console.log(`[TREE] Depth ${depth}: Processing "${nodeName}" (${companyNumber || 'no number'}) - Parent: ${parentId || 'ROOT'}`);
               
               // Check if this company has already been processed at a different level
               // Skip if it's a duplicate (same company number appearing multiple times)
               if (isCompany && companyNumber && seenCompanies.has(companyNumber) && depth > 0) {
-                console.log('Skipping duplicate company:', node.name, companyNumber);
+                console.log(`[TREE] ⚠️ Skipping duplicate company: ${nodeName} (${companyNumber})`);
                 return; // Skip this duplicate node
               }
               
@@ -1182,7 +1186,7 @@ app.get('/item/:id', async (c) => {
               
               nodes.push({
                 id: nodeId,
-                name: node.company_name || node.name,
+                name: nodeName,
                 companyNumber: companyNumber,
                 percentage: node.percentage || (depth === 0 ? 100 : 0),
                 shares: node.shares_held || 0,
@@ -1200,6 +1204,11 @@ app.get('/item/:id', async (c) => {
               const shareholders = node.shareholders || [];
               const children = node.children || [];
               const allChildren = [...shareholders, ...children];
+              
+              // DEBUG: Log children being processed
+              if (allChildren.length > 0) {
+                console.log(`[TREE]   └─ ${nodeName} has ${allChildren.length} children:`, allChildren.map(c => c.company_name || c.name));
+              }
               
               if (allChildren.length > 0) {
                 const childY = y + 150;
