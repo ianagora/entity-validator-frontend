@@ -1328,7 +1328,8 @@ app.get('/item/:id', async (c) => {
                 svg += '<path d="M ' + sourceX + ' ' + sourceY + ' C ' + sourceX + ' ' + midY + ', ' + targetX + ' ' + midY + ', ' + targetX + ' ' + targetY + '" stroke="#9ca3af" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>';
                 
                 // Add percentage label on link if available
-                if (target.percentage > 0) {
+                // Always show label if percentageBand exists, or if percentage > 0
+                if (target.percentageBand || target.percentage > 0) {
                   const labelX = (sourceX + targetX) / 2;
                   const labelY = (sourceY + targetY) / 2 - 5;
                   // Show percentage band if available (e.g., "75-100% voting rights"), otherwise exact percentage
