@@ -1168,7 +1168,7 @@ app.get('/item/:id', async (c) => {
             console.log('[TREE] Starting tree traversal...');
             console.log('[TREE] ========================================');
             
-            // Calculate subtree width recursively
+            // Calculate subtree width recursively with maximum width constraint
             function getSubtreeWidth(node) {
               const shareholders = node.shareholders || [];
               const children = node.children || [];
@@ -1176,6 +1176,11 @@ app.get('/item/:id', async (c) => {
               
               if (allChildren.length === 0) {
                 return 250; // Leaf node width
+              }
+              
+              // For many children (>6), use compact layout (200px per child instead of recursive)
+              if (allChildren.length > 6) {
+                return allChildren.length * 200; // Compact spacing
               }
               
               // Sum of all children's widths
@@ -1255,7 +1260,12 @@ app.get('/item/:id', async (c) => {
               }
             }
             
-            traverseTree(tree, 0, 400, 50, null);
+            // Calculate total tree width and start from center
+            const treeWidth = getSubtreeWidth(tree);
+            const startX = treeWidth / 2;
+            console.log('[TREE] Total tree width: ' + treeWidth + 'px, starting at X=' + startX);
+            
+            traverseTree(tree, 0, startX, 50, null);
             
             // Generate SVG and inject into container
             const svg = createOwnershipSVG(nodes, links);
