@@ -1170,19 +1170,20 @@ app.get('/item/:id', async (c) => {
               const companyNumber = node.company_number;
               const nodeName = node.company_name || node.name;
               
+              // Create unique identifier for individuals (use name + position)
+              const nodeKey = companyNumber || `${nodeName}-${x}-${y}`;
+              
               // DEBUG: Log each node being processed
-              console.log(`[TREE] Depth ${depth}: Processing "${nodeName}" (${companyNumber || 'no number'}) - Parent: ${parentId || 'ROOT'}`);
+              console.log(`[TREE] Depth ${depth}: Processing "${nodeName}" (${companyNumber || 'individual'}) at (${x},${y}) - Parent: ${parentId || 'ROOT'}`);
               
-              // Check if this company has already been processed at a different level
-              // Skip if it's a duplicate (same company number appearing multiple times)
-              if (isCompany && companyNumber && seenCompanies.has(companyNumber) && depth > 0) {
-                console.log(`[TREE] ⚠️ Skipping duplicate company: ${nodeName} (${companyNumber})`);
-                return; // Skip this duplicate node
+              // Check if this node has already been processed (prevents duplicates)
+              if (seenCompanies.has(nodeKey)) {
+                console.log(`[TREE] ⚠️ Skipping duplicate node: ${nodeName} (${nodeKey})`);
+                return;
               }
               
-              if (isCompany && companyNumber) {
-                seenCompanies.add(companyNumber);
-              }
+              // Track this node as processed
+              seenCompanies.add(nodeKey);
               
               nodes.push({
                 id: nodeId,
