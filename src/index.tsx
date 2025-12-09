@@ -1161,8 +1161,12 @@ app.get('/item/:id', async (c) => {
             const nodes = [];
             const links = [];
             
-            // Track seen companies to avoid duplicates
+            // Track ALL seen nodes to prevent duplicates (companies AND individuals)
             const seenCompanies = new Set();
+            
+            console.log('[TREE] ========================================');
+            console.log('[TREE] Starting tree traversal...');
+            console.log('[TREE] ========================================');
             
             function traverseTree(node, depth, x, y, parentId) {
               const nodeId = 'node-' + nodes.length;
