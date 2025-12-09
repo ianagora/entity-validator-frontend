@@ -764,21 +764,74 @@ app.get('/item/:id', async (c) => {
                     // Normalize and consolidate all individuals and entities from the complete ownership structure
                     const personMap = new Map(); // Use Map to track unique individuals by name
                     
+                    // Advanced name normalization function
+                    const normalizeName = (name) => {
+                      if (!name) return '';
+                      
+                      // For companies, just uppercase and trim
+                      if (name.toUpperCase().includes('LIMITED') || 
+                          name.toUpperCase().includes('LTD') ||
+                          name.toUpperCase().includes('PLC') ||
+                          name.toUpperCase().includes('LLP')) {
+                        return name.trim().toUpperCase();
+                      }
+                      
+                      // For individuals: normalize name variations
+                      let normalized = name.trim().toUpperCase();
+                      
+                      // Remove titles (Mr, Mrs, Ms, Miss, Dr, etc.)
+                      normalized = normalized.replace(/^(MR|MRS|MS|MISS|DR|SIR|DAME|LORD|LADY|PROFESSOR|PROF)\\.?\\s+/i, '');
+                      
+                      // Handle "LASTNAME, Firstname" format -> "FIRSTNAME LASTNAME"
+                      if (normalized.includes(',')) {
+                        const parts = normalized.split(',').map(p => p.trim());
+                        if (parts.length === 2) {
+                          // Reverse: "KHAN, HAROON" -> "HAROON KHAN"
+                          normalized = parts[1] + ' ' + parts[0];
+                        }
+                      }
+                      
+                      // Remove extra whitespace
+                      normalized = normalized.replace(/\\s+/g, ' ').trim();
+                      
+                      // Sort words alphabetically for better matching
+                      // This handles "HAROON KHAN" vs "KHAN HAROON"
+                      const words = normalized.split(' ').sort().join(' ');
+                      
+                      return words;
+                    };
+                    
                     // Helper function to add or merge person data
                     const addPerson = (name, data) => {
-                      const normalizedName = name.trim().toUpperCase();
+                      const normalizedName = normalizeName(name);
                       if (personMap.has(normalizedName)) {
                         const existing = personMap.get(normalizedName);
-                        // Merge roles
+                        
+                        // Choose the "best" display name (prefer the one with nationality/DOB as it's more formal)
+                        if (data.nationality || data.dob) {
+                          // Use the name with more data
+                          if (!existing.nationality && !existing.dob) {
+                            existing.name = name.trim();
+                          }
+                        } else if (!existing.name.includes(',') && name.includes(',')) {
+                          // Prefer "LASTNAME, Firstname" format (more formal)
+                          existing.name = name.trim();
+                        }
+                        
+                        // Merge roles (avoid duplicates)
                         if (data.role && !existing.roles.includes(data.role)) {
                           existing.roles.push(data.role);
                         }
-                        // Update other fields if not present
+                        
+                        // Update other fields if not present (use first non-null value)
                         existing.nationality = existing.nationality || data.nationality;
                         existing.dob = existing.dob || data.dob;
+                        
+                        // Merge linked entities (avoid duplicates)
                         if (data.linkedEntity && !existing.linkedEntities.includes(data.linkedEntity)) {
                           existing.linkedEntities.push(data.linkedEntity);
                         }
+                        
                         existing.isCompany = existing.isCompany || data.isCompany;
                         existing.companyNumber = existing.companyNumber || data.companyNumber;
                       } else {
