@@ -1170,7 +1170,9 @@ app.get('/item/:id', async (c) => {
               const companyNumber = node.company_number;
               const nodeName = node.company_name || node.name;
               
-              // Create unique identifier for individuals (use name + position)
+              // Create unique identifier for ALL nodes (prevents duplicate rendering)
+              // - Companies: use company number
+              // - Individuals: use name + position to ensure uniqueness
               const nodeKey = companyNumber || `${nodeName}-${x}-${y}`;
               
               // DEBUG: Log each node being processed
