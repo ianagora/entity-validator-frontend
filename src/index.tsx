@@ -1215,6 +1215,7 @@ app.get('/item/:id', async (c) => {
                 name: nodeName,
                 companyNumber: companyNumber,
                 percentage: node.percentage || (depth === 0 ? 100 : 0),
+                percentageBand: node.percentage_band || '',
                 shares: node.shares_held || 0,
                 isCompany: isCompany,
                 depth: depth,
@@ -1320,7 +1321,9 @@ app.get('/item/:id', async (c) => {
                 if (target.percentage > 0) {
                   const labelX = (sourceX + targetX) / 2;
                   const labelY = (sourceY + targetY) / 2 - 5;
-                  svg += '<text x="' + labelX + '" y="' + labelY + '" text-anchor="middle" font-size="11" fill="#6b7280" font-weight="600">' + target.percentage.toFixed(1) + '%</text>';
+                  // Show percentage band if available (e.g., "75-100% voting rights"), otherwise exact percentage
+                  const label = target.percentageBand || (target.percentage.toFixed(1) + '%');
+                  svg += '<text x="' + labelX + '" y="' + labelY + '" text-anchor="middle" font-size="10" fill="#6b7280" font-weight="600">' + escapeXml(label) + '</text>';
                 }
               }
             });
