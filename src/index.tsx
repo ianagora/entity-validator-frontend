@@ -600,12 +600,26 @@ app.get('/item/:id', async (c) => {
           const itemId = ${JSON.stringify(itemId)};
           console.log('[DEBUG] Page loaded, item ID:', itemId);
           
+          // Store tree data globally for toggle
+          let globalOwnershipTree = null;
+          let globalItem = null;
+          
+          function toggleTreeView() {
+            const isInverted = document.getElementById('tree-view-toggle').checked;
+            console.log('[TOGGLE] Switching to ' + (isInverted ? 'UBO-down' : 'bottom-up') + ' view');
+            
+            if (globalOwnershipTree) {
+              buildRecursiveOwnershipTree(globalOwnershipTree, 0, isInverted);
+            }
+          }
+          
           async function loadItemDetails() {
             try {
               console.log('[DEBUG] Fetching item data...');
               const response = await axios.get('/api/item/' + itemId);
               console.log('[DEBUG] Response status:', response.status);
               const item = response.data;
+              globalItem = item;  // Store globally
               console.log('[DEBUG] Item data received:', item ? 'yes' : 'no');
               
               document.getElementById('loading').classList.add('hidden');
@@ -614,7 +628,8 @@ app.get('/item/:id', async (c) => {
               // Build shareholders tree (use recursive tree if available, otherwise flat)
               let shareholderTree = '';
               if (item.ownership_tree && item.ownership_tree.shareholders && item.ownership_tree.shareholders.length > 0) {
-                shareholderTree = buildRecursiveOwnershipTree(item.ownership_tree);
+                globalOwnershipTree = item.ownership_tree;  // Store globally for toggle
+                shareholderTree = buildRecursiveOwnershipTree(item.ownership_tree, 0, false);
               } else if (item.shareholders && item.shareholders.length > 0) {
                 shareholderTree = buildOwnershipTree(item.shareholders, item.input_name);
               }
@@ -709,6 +724,16 @@ app.get('/item/:id', async (c) => {
                       <i class="fas fa-project-diagram mr-2"></i>Ownership Tree
                       \${item.ownership_tree ? '<span class="badge badge-success ml-2">Multi-Layer</span>' : ''}
                     </h3>
+                    <div class="mb-3 flex items-center gap-3">
+                      <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="tree-view-toggle" onchange="toggleTreeView()" class="w-4 h-4 text-blue-600 rounded">
+                        <span class="text-sm font-medium text-gray-700">
+                          <i class="fas fa-layer-group mr-1"></i>
+                          Show UBO-Down View
+                        </span>
+                      </label>
+                      <span class="text-xs text-gray-500">(Ultimate Beneficial Owners at top)</span>
+                    </div>
                     <div id="ownership-tree-container" style="overflow: auto; max-width: 100%; max-height: 600px; border: 1px solid #e5e7eb; border-radius: 8px;"></div>
                     <div class="mt-4 flex gap-2">
                       <button onclick="zoomIn()" class="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">
@@ -1068,8 +1093,171 @@ app.get('/item/:id', async (c) => {
             }
           }
           
-          function buildRecursiveOwnershipTree(tree, depth = 0) {
+          // Invert ownership tree to show UBOs at top, target company at bottom
+          function invertOwnershipTree(tree) {
+            if (!tree) return null;
+            
+            console.log('[INVERT] ========================================');
+            console.log('[INVERT] Starting tree inversion (UBO-down view)...');
+            console.log('[INVERT] ========================================');
+            
+            const targetCompany = {
+              name: tree.company_name || tree.name,
+              company_number: tree.company_number,
+              is_company: true,
+              depth: 0  // Will be recalculated
+            };
+            
+            // Find all UBOs (leaf nodes with no children/shareholders)
+            const ubos = [];
+            const ownershipPaths = [];  // Track paths from UBO to target
+            
+            function findUBOs(node, path = [], cumulativePercentage = 100) {
+              const currentPath = [...path, {
+                name: node.company_name || node.name,
+                company_number: node.company_number,
+                percentage: node.percentage || 100,
+                is_company: node.is_company !== false,
+                shares_held: node.shares_held
+              }];
+              
+              const shareholders = node.shareholders || [];
+              const children = node.children || [];
+              const allChildren = [...shareholders, ...children];
+              
+              if (allChildren.length === 0) {
+                // This is a UBO (leaf node)
+                const effectivePercentage = cumulativePercentage;
+                console.log('[INVERT] Found UBO: ' + currentPath[currentPath.length - 1].name + ' (' + effectivePercentage.toFixed(2) + '% effective)');
+                
+                ubos.push({
+                  name: currentPath[currentPath.length - 1].name,
+                  company_number: currentPath[currentPath.length - 1].company_number,
+                  is_company: currentPath[currentPath.length - 1].is_company,
+                  effective_percentage: effectivePercentage,
+                  path: currentPath
+                });
+                
+                ownershipPaths.push({
+                  ubo: currentPath[currentPath.length - 1].name,
+                  path: currentPath,
+                  effective_percentage: effectivePercentage
+                });
+              } else {
+                // Recurse into children
+                allChildren.forEach(child => {
+                  const childPercentage = child.percentage || 0;
+                  const newCumulative = (cumulativePercentage * childPercentage) / 100;
+                  findUBOs(child, currentPath, newCumulative);
+                });
+              }
+            }
+            
+            // Start from root (target company)
+            findUBOs(tree, [], 100);
+            
+            console.log('[INVERT] Found ' + ubos.length + ' UBOs');
+            console.log('[INVERT] Building inverted tree structure...');
+            
+            // Build inverted tree: each UBO becomes a root
+            const invertedTrees = ubos.map(ubo => {
+              // Reverse the path (UBO at top, target at bottom)
+              const reversedPath = [...ubo.path].reverse();
+              
+              // Build tree structure
+              let currentNode = null;
+              reversedPath.forEach((pathNode, idx) => {
+                const node = {
+                  name: pathNode.name,
+                  company_name: pathNode.name,
+                  company_number: pathNode.company_number,
+                  is_company: pathNode.is_company,
+                  percentage: pathNode.percentage,
+                  shares_held: pathNode.shares_held,
+                  depth: idx,
+                  shareholders: [],
+                  children: []
+                };
+                
+                // Add effective percentage to UBO node
+                if (idx === 0) {
+                  node.effective_percentage = ubo.effective_percentage;
+                  node.percentage = ubo.effective_percentage;
+                }
+                
+                if (currentNode) {
+                  currentNode.children.push(node);
+                }
+                
+                if (idx === 0) {
+                  // This is the UBO (root of this tree)
+                  currentNode = node;
+                } else {
+                  currentNode = node;
+                }
+              });
+              
+              // Return the root (UBO)
+              return reversedPath[0] ? {
+                name: reversedPath[0].name,
+                company_name: reversedPath[0].name,
+                company_number: reversedPath[0].company_number,
+                is_company: reversedPath[0].is_company,
+                percentage: ubo.effective_percentage,
+                effective_percentage: ubo.effective_percentage,
+                shares_held: reversedPath[0].shares_held,
+                depth: 0,
+                children: reversedPath.length > 1 ? [{
+                  name: reversedPath[1].name,
+                  company_name: reversedPath[1].name,
+                  company_number: reversedPath[1].company_number,
+                  is_company: reversedPath[1].is_company,
+                  percentage: reversedPath[1].percentage,
+                  shares_held: reversedPath[1].shares_held,
+                  depth: 1,
+                  children: buildChildChain(reversedPath.slice(2), 2)
+                }] : [],
+                shareholders: []
+              } : null;
+            }).filter(t => t !== null);
+            
+            function buildChildChain(pathNodes, startDepth) {
+              if (pathNodes.length === 0) return [];
+              
+              const firstNode = pathNodes[0];
+              return [{
+                name: firstNode.name,
+                company_name: firstNode.name,
+                company_number: firstNode.company_number,
+                is_company: firstNode.is_company,
+                percentage: firstNode.percentage,
+                shares_held: firstNode.shares_held,
+                depth: startDepth,
+                children: buildChildChain(pathNodes.slice(1), startDepth + 1),
+                shareholders: []
+              }];
+            }
+            
+            console.log('[INVERT] Built ' + invertedTrees.length + ' inverted trees');
+            
+            // Return a structure that can be rendered
+            // For now, we'll create a "virtual root" that contains all UBO trees
+            return {
+              name: 'Ultimate Beneficial Owners',
+              company_name: 'Ultimate Beneficial Owners',
+              is_company: false,
+              percentage: 100,
+              depth: -1,  // Virtual root
+              children: invertedTrees,
+              shareholders: []
+            };
+          }
+
+          function buildRecursiveOwnershipTree(tree, depth = 0, inverted = false) {
             if (!tree) return 'No ownership data available';
+            
+            // Apply inversion if requested
+            const workingTree = inverted ? invertOwnershipTree(tree) : tree;
             
             // Calculate tree structure and positions
             const nodes = [];
@@ -1106,11 +1294,31 @@ app.get('/item/:id', async (c) => {
               return Math.max(250, totalWidth); // At least 250px wide
             }
             
-            function traverseTree(node, depth, x, y, parentId) {
+            function traverseTree(node, depth, x, y, parentId, effectivePercentage) {
               const nodeId = 'node-' + nodes.length;
               const isCompany = node.is_company !== false;
               const companyNumber = node.company_number;
               const nodeName = node.company_name || node.name;
+              
+              // Skip virtual root in inverted mode
+              if (depth === -1 && nodeName === 'Ultimate Beneficial Owners') {
+                console.log('[TREE] Skipping virtual root, processing UBO children...');
+                const children = node.children || [];
+                const childY = y + 150;
+                
+                // Calculate spacing for UBOs
+                const childWidths = children.map(child => getSubtreeWidth(child));
+                const totalWidth = childWidths.reduce((a, b) => a + b, 0);
+                let currentX = x - totalWidth / 2;
+                
+                children.forEach((sh, idx) => {
+                  const childWidth = childWidths[idx];
+                  const childX = currentX + childWidth / 2;
+                  traverseTree(sh, 0, childX, childY, null, 100);
+                  currentX += childWidth;
+                });
+                return;
+              }
               
               // Create unique identifier for ALL nodes (prevents duplicate rendering)
               // - Companies: use company number
@@ -1129,11 +1337,14 @@ app.get('/item/:id', async (c) => {
               // Track this node as processed
               seenCompanies.add(nodeKey);
               
+              // Use effective percentage if available (for UBOs in inverted tree)
+              const displayPercentage = node.effective_percentage || node.percentage || (depth === 0 ? 100 : 0);
+              
               nodes.push({
                 id: nodeId,
                 name: nodeName,
                 companyNumber: companyNumber,
-                percentage: node.percentage || (depth === 0 ? 100 : 0),
+                percentage: displayPercentage,
                 percentageBand: node.percentage_band || '',
                 shares: node.shares_held || 0,
                 isCompany: isCompany,
@@ -1168,18 +1379,21 @@ app.get('/item/:id', async (c) => {
                 allChildren.forEach((sh, idx) => {
                   const childWidth = childWidths[idx];
                   const childX = currentX + childWidth / 2;
-                  traverseTree(sh, depth + 1, childX, childY, nodeId);
+                  const childEffective = sh.effective_percentage || ((effectivePercentage * (sh.percentage || 100)) / 100);
+                  traverseTree(sh, depth + 1, childX, childY, nodeId, childEffective);
                   currentX += childWidth;
                 });
               }
             }
             
             // Calculate total tree width and start from center
-            const treeWidth = getSubtreeWidth(tree);
+            const treeWidth = getSubtreeWidth(workingTree);
             const startX = treeWidth / 2;
             console.log('[TREE] Total tree width: ' + treeWidth + 'px, starting at X=' + startX);
             
-            traverseTree(tree, 0, startX, 50, null);
+            // Start traversal with depth -1 for virtual root in inverted mode
+            const startDepth = (inverted && workingTree.depth === -1) ? -1 : 0;
+            traverseTree(workingTree, startDepth, startX, 50, null, 100);
             
             // Generate SVG and inject into container
             const svg = createOwnershipSVG(nodes, links);
