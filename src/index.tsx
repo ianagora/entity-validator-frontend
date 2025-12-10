@@ -709,7 +709,7 @@ app.get('/item/:id', async (c) => {
                       <i class="fas fa-project-diagram mr-2"></i>Ownership Tree
                       \${item.ownership_tree ? '<span class="badge badge-success ml-2">Multi-Layer</span>' : ''}
                     </h3>
-                    <div id="ownership-tree-container" style="overflow-x: auto; overflow-y: visible; max-width: 100%;"></div>
+                    <div id="ownership-tree-container" style="overflow: auto; max-width: 100%; max-height: 600px; border: 1px solid #e5e7eb; border-radius: 8px;"></div>
                     <div class="mt-4 flex gap-2">
                       <button onclick="zoomIn()" class="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">
                         <i class="fas fa-search-plus"></i> Zoom In
