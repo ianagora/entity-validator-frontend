@@ -981,8 +981,8 @@ app.get('/item/:id', async (c) => {
                         </label>
                         <select id="linked-entity-filter" class="w-full px-3 py-2 border rounded text-sm" onchange="filterScreeningTable()">
                           <option value="">All Entities (\${consolidatedList.length} entries)</option>
-                          <option value="${targetCompanyName}" class="font-semibold">
-                            🏢 ${targetCompanyName} Only (Main Entity)
+                          <option value="\${targetCompanyName}" class="font-semibold">
+                            🏢 \${targetCompanyName} Only (Main Entity)
                           </option>
                           <optgroup label="All Linked Entities">
                             \${uniqueLinkedEntities.map(entity => {
