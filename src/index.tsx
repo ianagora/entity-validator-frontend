@@ -877,34 +877,11 @@ app.get('/item/:id', async (c) => {
                     const targetCompanyNumber = item.company_number;
                     
                     // 1. Process ownership_chain
-                    // - Include ALL companies (entities) from the ownership chain
-                    // - Include individuals (directors, officers, PSCs) ONLY from the main target company
+                    // - Include ONLY companies (entities) from the ownership chain
+                    // - SKIP all individuals from ownership_chain (they'll come from governance_and_control)
                     if (item.screening_list?.ownership_chain) {
                       item.screening_list.ownership_chain.forEach(entry => {
-                        if (!entry.is_company) {
-                          // Only add individuals if they're linked to the TARGET COMPANY
-                          // Check if this person is from the target company
-                          const isFromTargetCompany = entry.company_number === targetCompanyNumber || 
-                                                      entry.category?.includes(targetCompanyName);
-                          
-                          if (isFromTargetCompany) {
-                            // Find linked entity from category
-                            let linkedEntity = targetCompanyName;
-                            if (entry.category) {
-                              const match = entry.category.match(/of (.+)$/);
-                              if (match) {
-                                linkedEntity = match[1];
-                              }
-                            }
-                            
-                            addPerson(entry.name, {
-                              role: entry.role,
-                              linkedEntity: linkedEntity,
-                              isCompany: false
-                            });
-                          }
-                          // Skip individuals from parent/grandparent companies
-                        } else {
+                        if (entry.is_company) {
                           // Add ALL corporate entities from the chain
                           addPerson(entry.name, {
                             role: entry.role,
@@ -913,6 +890,8 @@ app.get('/item/:id', async (c) => {
                             companyNumber: entry.company_number
                           });
                         }
+                        // Skip ALL individuals from ownership_chain
+                        // (they will be added from governance_and_control section instead)
                       });
                     }
                     
