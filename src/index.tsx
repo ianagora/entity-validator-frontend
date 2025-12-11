@@ -872,29 +872,40 @@ app.get('/item/:id', async (c) => {
                       }
                     };
                     
-                    // Extract target company name for reference
+                    // Extract target company name and number for reference
                     const targetCompanyName = item.input_name || item.profile?.company_name || 'Target Company';
+                    const targetCompanyNumber = item.company_number;
                     
-                    // 1. Process ownership_chain (includes officers, directors, PSCs from all levels)
+                    // 1. Process ownership_chain
+                    // - Include ALL companies (entities) from the ownership chain
+                    // - Include individuals (directors, officers, PSCs) ONLY from the main target company
                     if (item.screening_list?.ownership_chain) {
                       item.screening_list.ownership_chain.forEach(entry => {
                         if (!entry.is_company) {
-                          // Find linked entity from category
-                          let linkedEntity = targetCompanyName;
-                          if (entry.category) {
-                            const match = entry.category.match(/of (.+)$/);
-                            if (match) {
-                              linkedEntity = match[1];
-                            }
-                          }
+                          // Only add individuals if they're linked to the TARGET COMPANY
+                          // Check if this person is from the target company
+                          const isFromTargetCompany = entry.company_number === targetCompanyNumber || 
+                                                      entry.category?.includes(targetCompanyName);
                           
-                          addPerson(entry.name, {
-                            role: entry.role,
-                            linkedEntity: linkedEntity,
-                            isCompany: false
-                          });
+                          if (isFromTargetCompany) {
+                            // Find linked entity from category
+                            let linkedEntity = targetCompanyName;
+                            if (entry.category) {
+                              const match = entry.category.match(/of (.+)$/);
+                              if (match) {
+                                linkedEntity = match[1];
+                              }
+                            }
+                            
+                            addPerson(entry.name, {
+                              role: entry.role,
+                              linkedEntity: linkedEntity,
+                              isCompany: false
+                            });
+                          }
+                          // Skip individuals from parent/grandparent companies
                         } else {
-                          // Add corporate entities too
+                          // Add ALL corporate entities from the chain
                           addPerson(entry.name, {
                             role: entry.role,
                             linkedEntity: targetCompanyName,
