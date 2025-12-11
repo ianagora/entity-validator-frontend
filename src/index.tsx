@@ -959,6 +959,9 @@ app.get('/item/:id', async (c) => {
                       return a.name.localeCompare(b.name);
                     });
                     
+                    // Get unique linked entities for filter
+                    const uniqueLinkedEntities = [...new Set(consolidatedList.flatMap(p => p.linkedEntities))].sort();
+                    
                     return consolidatedList.length > 0 ? \`
                   <div class="mb-6">
                     <h3 class="text-lg font-semibold mb-3 flex items-center">
@@ -967,10 +970,37 @@ app.get('/item/:id', async (c) => {
                     </h3>
                     <p class="text-sm text-gray-600 mb-3">
                       All entities, directors, company secretaries, officers, and PSCs from the complete ownership structure.
-                      <br><span class="text-xs">Normalized to remove duplicates • Total: \${consolidatedList.length} unique entries</span>
+                      <br><span class="text-xs">Normalized to remove duplicates • Total: <span id="screening-total">\${consolidatedList.length}</span> unique entries (<span id="screening-visible">\${consolidatedList.length}</span> shown)</span>
                     </p>
+                    
+                    <!-- Filter Controls -->
+                    <div class="mb-4 flex gap-4 items-center bg-gray-50 p-3 rounded">
+                      <div class="flex-1">
+                        <label class="text-sm font-medium text-gray-700 mb-1 block">
+                          <i class="fas fa-filter mr-1"></i>Filter by Linked Entity:
+                        </label>
+                        <select id="linked-entity-filter" class="w-full px-3 py-2 border rounded text-sm" onchange="filterScreeningTable()">
+                          <option value="">All Entities (\${consolidatedList.length} entries)</option>
+                          <option value="${targetCompanyName}" class="font-semibold">
+                            🏢 ${targetCompanyName} Only (Main Entity)
+                          </option>
+                          <optgroup label="All Linked Entities">
+                            \${uniqueLinkedEntities.map(entity => {
+                              const count = consolidatedList.filter(p => p.linkedEntities.includes(entity)).length;
+                              return \`<option value="\${entity}">\${entity} (\${count})</option>\`;
+                            }).join('')}
+                          </optgroup>
+                        </select>
+                      </div>
+                      <div class="flex flex-col justify-end">
+                        <button onclick="clearScreeningFilter()" class="px-3 py-2 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300">
+                          <i class="fas fa-times mr-1"></i>Clear Filter
+                        </button>
+                      </div>
+                    </div>
+                    
                     <div class="overflow-x-auto">
-                      <table class="w-full text-sm border">
+                      <table id="screening-table" class="w-full text-sm border">
                         <thead class="bg-gray-50">
                           <tr>
                             <th class="px-4 py-2 text-left border">Name</th>
@@ -981,8 +1011,8 @@ app.get('/item/:id', async (c) => {
                           </tr>
                         </thead>
                         <tbody>
-                          \${consolidatedList.map(person => \`
-                            <tr class="hover:bg-gray-50 \${person.isCompany ? 'bg-blue-50' : ''}">
+                          \${consolidatedList.map((person, idx) => \`
+                            <tr class="screening-row hover:bg-gray-50 \${person.isCompany ? 'bg-blue-50' : ''}" data-linked-entities="\${person.linkedEntities.join('||')}" data-index="\${idx}">
                               <td class="px-4 py-2 border font-medium">
                                 \${person.isCompany ? '🏢' : '👤'} \${person.name}
                                 \${person.companyNumber ? \`<br><span class="text-xs text-gray-500">\${person.companyNumber}</span>\` : ''}
@@ -1020,6 +1050,45 @@ app.get('/item/:id', async (c) => {
               document.getElementById('error').classList.remove('hidden');
               document.getElementById('error').querySelector('p').textContent = 
                 'Failed to load entity details: ' + error.message;
+            }
+          }
+          
+          // Screening Table Filter Functions
+          function filterScreeningTable() {
+            const filterValue = document.getElementById('linked-entity-filter').value;
+            const rows = document.querySelectorAll('.screening-row');
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+              const linkedEntities = row.getAttribute('data-linked-entities').split('||');
+              
+              if (!filterValue) {
+                // Show all rows
+                row.style.display = '';
+                visibleCount++;
+              } else {
+                // Show only rows that have the selected linked entity
+                if (linkedEntities.includes(filterValue)) {
+                  row.style.display = '';
+                  visibleCount++;
+                } else {
+                  row.style.display = 'none';
+                }
+              }
+            });
+            
+            // Update visible count
+            const visibleCountElement = document.getElementById('screening-visible');
+            if (visibleCountElement) {
+              visibleCountElement.textContent = visibleCount;
+            }
+          }
+          
+          function clearScreeningFilter() {
+            const filterSelect = document.getElementById('linked-entity-filter');
+            if (filterSelect) {
+              filterSelect.value = '';
+              filterScreeningTable();
             }
           }
           
