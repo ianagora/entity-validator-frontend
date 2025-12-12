@@ -1409,7 +1409,8 @@ app.get('/item/:id', async (c) => {
                 isCompany: isCompany,
                 depth: depth,
                 x: x,
-                y: y
+                y: y,
+                country: node.country || ''
               });
               
               if (parentId) {
@@ -1464,6 +1465,59 @@ app.get('/item/:id', async (c) => {
             }, 100);
             
             return ''; // Return empty string as we're injecting directly
+          }
+          
+          // Map country names to flag emojis
+          function getCountryFlag(country) {
+            if (!country) return '';
+            const countryUpper = country.toUpperCase();
+            const flagMap = {
+              'ENGLAND': '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+              'SCOTLAND': '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+              'WALES': '🏴󠁧󠁢󠁷󠁬󠁳󠁿',
+              'NORTHERN IRELAND': '🇬🇧',
+              'UNITED KINGDOM': '🇬🇧',
+              'UK': '🇬🇧',
+              'GERMANY': '🇩🇪',
+              'FRANCE': '🇫🇷',
+              'SPAIN': '🇪🇸',
+              'ITALY': '🇮🇹',
+              'NETHERLANDS': '🇳🇱',
+              'BELGIUM': '🇧🇪',
+              'IRELAND': '🇮🇪',
+              'LUXEMBOURG': '🇱🇺',
+              'SWITZERLAND': '🇨🇭',
+              'AUSTRIA': '🇦🇹',
+              'DENMARK': '🇩🇰',
+              'SWEDEN': '🇸🇪',
+              'NORWAY': '🇳🇴',
+              'FINLAND': '🇫🇮',
+              'POLAND': '🇵🇱',
+              'CZECH REPUBLIC': '🇨🇿',
+              'PORTUGAL': '🇵🇹',
+              'GREECE': '🇬🇷',
+              'USA': '🇺🇸',
+              'UNITED STATES': '🇺🇸',
+              'CANADA': '🇨🇦',
+              'AUSTRALIA': '🇦🇺',
+              'NEW ZEALAND': '🇳🇿',
+              'JAPAN': '🇯🇵',
+              'CHINA': '🇨🇳',
+              'INDIA': '🇮🇳',
+              'SINGAPORE': '🇸🇬',
+              'HONG KONG': '🇭🇰',
+              'SOUTH KOREA': '🇰🇷',
+              'BRAZIL': '🇧🇷',
+              'MEXICO': '🇲🇽',
+              'ARGENTINA': '🇦🇷',
+              'SOUTH AFRICA': '🇿🇦',
+              'RUSSIA': '🇷🇺',
+              'TURKEY': '🇹🇷',
+              'ISRAEL': '🇮🇱',
+              'UAE': '🇦🇪',
+              'SAUDI ARABIA': '🇸🇦'
+            };
+            return flagMap[countryUpper] || '🌍';
           }
           
           function createOwnershipSVG(nodes, links) {
@@ -1536,9 +1590,13 @@ app.get('/item/:id', async (c) => {
               // Node box
               svg += '<rect x="' + (node.x - 100) + '" y="' + (node.y - 35) + '" width="200" height="70" rx="8" ry="8" fill="' + fillColor + '" stroke="' + strokeColor + '" stroke-width="2" filter="url(#shadow)" style="cursor: pointer;"/>';
               
-              // Company icon
+              // Company icon with country flag
               const icon = node.isCompany ? '🏢' : '👤';
+              const flag = getCountryFlag(node.country);
               svg += '<text x="' + (node.x - 90) + '" y="' + (node.y - 10) + '" font-size="16">' + icon + '</text>';
+              if (flag) {
+                svg += '<text x="' + (node.x + 80) + '" y="' + (node.y - 10) + '" font-size="16" title="' + escapeXml(node.country) + '">' + flag + '</text>';
+              }
               
               // Company name with wrapping
               const maxCharsPerLine = 20;
