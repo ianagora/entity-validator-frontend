@@ -1469,8 +1469,8 @@ app.get('/item/:id', async (c) => {
           
           // Map country names to flag emojis
           function getCountryFlag(country) {
-            if (!country) return '';
-            const countryUpper = country.toUpperCase();
+            if (!country || typeof country !== 'string') return '';
+            const countryUpper = country.toUpperCase().trim();
             const flagMap = {
               'ENGLAND': '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
               'SCOTLAND': '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
@@ -1594,7 +1594,7 @@ app.get('/item/:id', async (c) => {
               const icon = node.isCompany ? '🏢' : '👤';
               const flag = getCountryFlag(node.country);
               svg += '<text x="' + (node.x - 90) + '" y="' + (node.y - 10) + '" font-size="16">' + icon + '</text>';
-              if (flag) {
+              if (flag && node.country) {
                 svg += '<text x="' + (node.x + 80) + '" y="' + (node.y - 10) + '" font-size="16" title="' + escapeXml(node.country) + '">' + flag + '</text>';
               }
               
