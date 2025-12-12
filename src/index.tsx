@@ -793,12 +793,17 @@ app.get('/item/:id', async (c) => {
                     const normalizeName = (name) => {
                       if (!name) return '';
                       
-                      // For companies, just uppercase and trim
+                      // For companies, uppercase and strip legal suffixes
                       if (name.toUpperCase().includes('LIMITED') || 
                           name.toUpperCase().includes('LTD') ||
                           name.toUpperCase().includes('PLC') ||
                           name.toUpperCase().includes('LLP')) {
-                        return name.trim().toUpperCase();
+                        let normalized = name.trim().toUpperCase();
+                        // Strip common legal suffixes to match "Limited" with "Ltd"
+                        normalized = normalized.replace(/\b(LIMITED|LTD|PLC|LLP|LP|COMPANY|CO)\b/g, '');
+                        // Remove extra whitespace and punctuation
+                        normalized = normalized.replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
+                        return normalized;
                       }
                       
                       // For individuals: normalize name variations
