@@ -758,15 +758,7 @@ app.get('/item/:id', async (c) => {
 
                 <!-- KYC/AML Screening Requirements -->
                 <div class="card">
-                  <div class="flex justify-between items-start mb-4">
-                    <div>
-                      <h2 class="section-title mb-2">
-                        <i class="fas fa-search-dollar mr-2"></i>KYC/AML Screening Requirements
-                      </h2>
-                      <p class="text-sm text-gray-600">
-                        Comprehensive list of persons and entities requiring screening based on UK AML regulations.
-                      </p>
-                    </div>
+                  <div class="flex justify-between items-center mb-4">
                     <div class="flex gap-2">
                       <a href="/api/item/\${item.id}/screening-export.csv" 
                          class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
@@ -886,6 +878,7 @@ app.get('/item/:id', async (c) => {
                     // - SKIP all individuals from ownership_chain (they'll come from governance_and_control)
                     if (item.screening_list?.ownership_chain) {
                       item.screening_list.ownership_chain.forEach(entry => {
+                        console.log('[SCREENING DEBUG] ownership_chain entry:', entry.name, 'is_company:', entry.is_company, 'type:', typeof entry.is_company);
                         if (entry.is_company) {
                           // Add ALL corporate entities from the chain
                           addPerson(entry.name, {
