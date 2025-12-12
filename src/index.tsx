@@ -760,6 +760,7 @@ app.get('/item/:id', async (c) => {
 
                 <!-- KYC/AML Screening Requirements -->
                 <div class="card">
+                  <!-- Download CSV and Print buttons hidden temporarily (showing too many parties)
                   <div class="flex justify-between items-center mb-4">
                     <div class="flex gap-2">
                       <a href="/api/item/\${item.id}/screening-export.csv" 
@@ -773,6 +774,7 @@ app.get('/item/:id', async (c) => {
                       </button>
                     </div>
                   </div>
+                  -->
 
                   <!-- Consolidated Screening List -->
                   \${(() => {
