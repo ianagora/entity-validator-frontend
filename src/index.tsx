@@ -873,10 +873,17 @@ app.get('/item/:id', async (c) => {
                     const targetCompanyName = item.input_name || item.profile?.company_name || 'Target Company';
                     const targetCompanyNumber = item.company_number;
                     
+                    // DEBUG: Log what screening_list contains
+                    console.log('[SCREENING DEBUG] screening_list keys:', Object.keys(item.screening_list || {}));
+                    console.log('[SCREENING DEBUG] ownership_chain length:', item.screening_list?.ownership_chain?.length || 0);
+                    console.log('[SCREENING DEBUG] entity length:', item.screening_list?.entity?.length || 0);
+                    
                     // 1. Process ownership_chain
                     // - Include ONLY companies (entities) from the ownership chain
                     // - SKIP all individuals from ownership_chain (they'll come from governance_and_control)
+                    console.log('[SCREENING DEBUG] ownership_chain exists?', !!item.screening_list?.ownership_chain, 'length:', item.screening_list?.ownership_chain?.length);
                     if (item.screening_list?.ownership_chain) {
+                      console.log('[SCREENING DEBUG] Processing', item.screening_list.ownership_chain.length, 'ownership_chain entries');
                       item.screening_list.ownership_chain.forEach(entry => {
                         console.log('[SCREENING DEBUG] ownership_chain entry:', entry.name, 'is_company:', entry.is_company, 'type:', typeof entry.is_company);
                         if (entry.is_company) {
