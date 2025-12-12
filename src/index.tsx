@@ -1582,6 +1582,9 @@ app.get('/item/:id', async (c) => {
               svg += '<text x="' + (node.x - 90) + '" y="' + (node.y - 10) + '" font-size="16">' + icon + '</text>';
               if (flag && node.country) {
                 svg += '<text x="' + (node.x + 80) + '" y="' + (node.y - 10) + '" font-size="16" title="' + escapeXml(node.country) + '">' + flag + '</text>';
+              } else if (node.isCompany && !node.companyNumber) {
+                // Show question mark for non-UK companies (no UK company number)
+                svg += '<text x="' + (node.x + 80) + '" y="' + (node.y - 10) + '" font-size="16" title="Non-UK company (no UK company number)">❓</text>';
               }
               
               // Company name with wrapping
