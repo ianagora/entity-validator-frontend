@@ -239,7 +239,7 @@ app.get('/', (c) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Entity Validator - Dashboard</title>
+        <title>BOCVerify - Dashboard</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
@@ -269,10 +269,10 @@ app.get('/', (c) => {
             <div class="mb-8">
                 <h1 class="text-4xl font-bold text-gray-900 mb-2">
                     <i class="fas fa-building text-blue-600 mr-3"></i>
-                    Entity Validation Platform
+                    BOCVerify
                 </h1>
                 <p class="text-gray-600 text-lg">
-                    UK Companies House & Charity Commission Entity Resolution & Enrichment
+                    Companies House entity beneficial ownership & control enrichment system
                 </p>
             </div>
 
@@ -561,7 +561,7 @@ app.get('/item/:id', async (c) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Entity Details - Entity Validator</title>
+        <title>Entity Details - BOCVerify</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
@@ -1740,7 +1740,7 @@ app.get('/batch/:id', async (c) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Batch ${batchId} - Entity Validator</title>
+        <title>Batch ${batchId} - BOCVerify</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     </head>

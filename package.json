@@ -2,7 +2,7 @@
   "name": "entity-validator-frontend",
   "type": "module",
   "version": "1.0.0",
-  "description": "Entity Validation & Enrichment Platform - Cloudflare Frontend",
+  "description": "BOCVerify - Companies House Beneficial Ownership & Control Enrichment - Cloudflare Frontend",
   "scripts": {
     "dev": "vite",
     "dev:sandbox": "wrangler pages dev dist --ip 0.0.0.0 --port 3000",
