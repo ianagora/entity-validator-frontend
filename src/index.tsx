@@ -793,15 +793,19 @@ app.get('/item/:id', async (c) => {
                     const normalizeName = (name) => {
                       if (!name) return '';
                       
-                      // For companies, uppercase and strip legal suffixes
+                      // For companies, uppercase and normalize legal suffixes
                       if (name.toUpperCase().includes('LIMITED') || 
                           name.toUpperCase().includes('LTD') ||
                           name.toUpperCase().includes('PLC') ||
                           name.toUpperCase().includes('LLP')) {
                         let normalized = name.trim().toUpperCase();
-                        // Strip common legal suffixes to match "Limited" with "Ltd"
-                        normalized = normalized.replace(/\b(LIMITED|LTD|PLC|LLP|LP|COMPANY|CO)\b/g, '');
-                        // Remove extra whitespace and punctuation
+                        // Normalize legal suffixes: Convert all variations to a standard form
+                        // This ensures "LIMITED" and "LTD" map to the same thing without removing them
+                        normalized = normalized.replace(/\bLIMITED\b/g, 'LTD');
+                        normalized = normalized.replace(/\bP\.L\.C\b/g, 'PLC');
+                        normalized = normalized.replace(/\bL\.L\.P\b/g, 'LLP');
+                        normalized = normalized.replace(/\bCOMPANY\b/g, 'CO');
+                        // Remove punctuation but keep the suffix
                         normalized = normalized.replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
                         return normalized;
                       }
