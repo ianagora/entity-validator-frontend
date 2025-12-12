@@ -1486,6 +1486,8 @@ app.get('/item/:id', async (c) => {
               'NORTHERN IRELAND': '🇬🇧',
               'UNITED KINGDOM': '🇬🇧',
               'UK': '🇬🇧',
+              'EUROPEAN UNION': '🇪🇺',
+              'EU': '🇪🇺',
               'GERMANY': '🇩🇪',
               'FRANCE': '🇫🇷',
               'SPAIN': '🇪🇸',
