@@ -814,7 +814,7 @@ app.get('/item/:id', async (c) => {
                       }
                       
                       // Remove extra whitespace
-                      normalized = normalized.replace(/\\s+/g, ' ').trim();
+                      normalized = normalized.replace(/\s+/g, ' ').trim();
                       
                       // Sort words alphabetically for better matching
                       // This handles "HAROON KHAN" vs "KHAN HAROON"
@@ -826,6 +826,12 @@ app.get('/item/:id', async (c) => {
                     // Helper function to add or merge person data
                     const addPerson = (name, data) => {
                       const normalizedName = normalizeName(name);
+                      
+                      // DEBUG: Log every addPerson call for companies
+                      if (data.isCompany && name.toUpperCase().includes('KENNING')) {
+                        console.log('[ADD_PERSON DEBUG] Adding:', name, '→ Normalized:', normalizedName, 'Data:', data);
+                      }
+                      
                       if (personMap.has(normalizedName)) {
 
                         const existing = personMap.get(normalizedName);
@@ -946,6 +952,16 @@ app.get('/item/:id', async (c) => {
                           companyNumber: entity.company_number
                         });
                       });
+                    }
+                    
+                    // DEBUG: Check if Kenning is in the Map before converting to array
+                    console.log('[MAP DEBUG] personMap size:', personMap.size);
+                    console.log('[MAP DEBUG] personMap keys:', Array.from(personMap.keys()));
+                    const kenningInMap = Array.from(personMap.entries()).find(([key, val]) => key.includes('KENNING'));
+                    if (kenningInMap) {
+                      console.log('[MAP DEBUG] Found KENNING in map:', kenningInMap);
+                    } else {
+                      console.log('[MAP DEBUG] ❌ KENNING NOT in map!');
                     }
                     
                     // Convert Map to sorted array
