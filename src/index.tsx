@@ -1570,7 +1570,7 @@ app.get('/item/:id', async (c) => {
               const flag = getCountryFlag(node.country);
               
               // DEBUG: Log country flag rendering
-              if (depth <= 2) {
+              if (node.depth <= 2) {
                 console.log('[FLAG DEBUG] Node:', node.name, 'Country:', node.country, 'Flag:', flag, 'Has country:', !!node.country, 'Has flag:', !!flag);
               }
               
