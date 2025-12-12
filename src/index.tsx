@@ -827,6 +827,7 @@ app.get('/item/:id', async (c) => {
                     const addPerson = (name, data) => {
                       const normalizedName = normalizeName(name);
                       if (personMap.has(normalizedName)) {
+
                         const existing = personMap.get(normalizedName);
                         
                         // Choose the "best" display name (prefer the one with nationality/DOB as it's more formal)
@@ -953,6 +954,10 @@ app.get('/item/:id', async (c) => {
                       if (a.isCompany !== b.isCompany) return a.isCompany ? -1 : 1;
                       return a.name.localeCompare(b.name);
                     });
+                    
+                    console.log('[SCREENING DEBUG] Final consolidated list - Total entries:', consolidatedList.length);
+                    console.log('[SCREENING DEBUG] Companies in list:', consolidatedList.filter(p => p.isCompany).map(p => p.name));
+                    console.log('[SCREENING DEBUG] Individuals in list:', consolidatedList.filter(p => !p.isCompany).map(p => p.name));
                     
                     // Get unique linked entities for filter
                     const uniqueLinkedEntities = [...new Set(consolidatedList.flatMap(p => p.linkedEntities))].sort();
