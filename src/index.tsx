@@ -720,6 +720,7 @@ app.get('/item/:id', async (c) => {
                       <i class="fas fa-project-diagram mr-2"></i>Ownership Tree
                       \${item.ownership_tree ? '<span class="badge badge-success ml-2">Multi-Layer</span>' : ''}
                     </h3>
+                    <!-- UBO-Down View toggle hidden temporarily
                     <div class="mb-3 flex items-center gap-3">
                       <label class="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" id="tree-view-toggle" onchange="toggleTreeView()" class="w-4 h-4 text-blue-600 rounded">
@@ -730,6 +731,7 @@ app.get('/item/:id', async (c) => {
                       </label>
                       <span class="text-xs text-gray-500">(Ultimate Beneficial Owners at top)</span>
                     </div>
+                    -->
                     <div id="ownership-tree-container" style="overflow: auto; max-width: 100%; max-height: 600px;"></div>
                     <div class="mt-4 flex gap-2">
                       <button onclick="zoomIn()" class="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">
@@ -781,20 +783,42 @@ app.get('/item/:id', async (c) => {
                     const normalizeName = (name) => {
                       if (!name) return '';
                       
+                      // DEBUG for Kenning
+                      const isKenning = name.toUpperCase().includes('KENNING');
+                      if (isKenning) console.log('[NORMALIZE] Input:', name);
+                      
                       // For companies, uppercase and normalize legal suffixes
                       if (name.toUpperCase().includes('LIMITED') || 
                           name.toUpperCase().includes('LTD') ||
                           name.toUpperCase().includes('PLC') ||
                           name.toUpperCase().includes('LLP')) {
                         let normalized = name.trim().toUpperCase();
-                        // Normalize legal suffixes: Convert all variations to a standard form
-                        // This ensures "LIMITED" and "LTD" map to the same thing without removing them
-                        normalized = normalized.replace(/\bLIMITED\b/g, 'LTD');
-                        normalized = normalized.replace(/\bP\.L\.C\b/g, 'PLC');
-                        normalized = normalized.replace(/\bL\.L\.P\b/g, 'LLP');
-                        normalized = normalized.replace(/\bCOMPANY\b/g, 'CO');
-                        // Remove punctuation but keep the suffix
-                        normalized = normalized.replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
+                        if (isKenning) console.log('[NORMALIZE] After uppercase:', normalized);
+                        
+                        // Normalize legal suffixes: Use string methods to avoid regex issues in template literals
+                        normalized = normalized.split(' LIMITED').join(' LTD');
+                        normalized = normalized.endsWith(' LIMITED') ? normalized.slice(0, -8) + ' LTD' : normalized;
+                        normalized = normalized === 'LIMITED' ? 'LTD' : normalized;
+                        if (isKenning) console.log('[NORMALIZE] After LIMITED→LTD:', normalized);
+                        
+                        normalized = normalized.split('P.L.C').join('PLC');
+                        normalized = normalized.split('L.L.P').join('LLP');
+                        normalized = normalized.split(' COMPANY').join(' CO');
+                        
+                        // Remove punctuation - use character class that works in template literals
+                        // Keep only: A-Z, 0-9, and spaces
+                        normalized = normalized.split('').filter(c => {
+                          const code = c.charCodeAt(0);
+                          return (code >= 65 && code <= 90) || // A-Z
+                                 (code >= 48 && code <= 57) || // 0-9
+                                 code === 32; // space
+                        }).join('');
+                        if (isKenning) console.log('[NORMALIZE] After punctuation removal:', normalized);
+                        
+                        // Remove extra whitespace
+                        normalized = normalized.split(' ').filter(s => s.length > 0).join(' ');
+                        if (isKenning) console.log('[NORMALIZE] Final (company):', normalized);
+                        
                         return normalized;
                       }
                       
