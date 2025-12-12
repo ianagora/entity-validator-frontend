@@ -714,10 +714,6 @@ app.get('/item/:id', async (c) => {
                 \${item.shareholders && item.shareholders.length > 0 ? \`
                 <div class="card">
                   <h2 class="section-title"><i class="fas fa-sitemap mr-2"></i>Ownership Structure</h2>
-                  <p class="text-sm text-gray-600 mb-4">
-                    Extracted from Companies House filings (CS01/AR01/IN01) using Tesseract OCR
-                  </p>
-                  
                   <!-- Ownership Tree -->
                   <div class="mb-6">
                     <h3 class="text-lg font-semibold mb-3">
@@ -734,7 +730,7 @@ app.get('/item/:id', async (c) => {
                       </label>
                       <span class="text-xs text-gray-500">(Ultimate Beneficial Owners at top)</span>
                     </div>
-                    <div id="ownership-tree-container" style="overflow: auto; max-width: 100%; max-height: 600px; border: 1px solid #e5e7eb; border-radius: 8px;"></div>
+                    <div id="ownership-tree-container" style="overflow: auto; max-width: 100%; max-height: 600px;"></div>
                     <div class="mt-4 flex gap-2">
                       <button onclick="zoomIn()" class="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">
                         <i class="fas fa-search-plus"></i> Zoom In
@@ -968,35 +964,8 @@ app.get('/item/:id', async (c) => {
                       Consolidated Screening List
                     </h3>
                     <p class="text-sm text-gray-600 mb-3">
-                      All entities, directors, company secretaries, officers, and PSCs from the complete ownership structure.
-                      <br><span class="text-xs">Normalized to remove duplicates • Total: <span id="screening-total">\${consolidatedList.length}</span> unique entries (<span id="screening-visible">\${consolidatedList.length}</span> shown)</span>
+                      Comprehensive list of persons and entities requiring screening based on UK AML regulations.
                     </p>
-                    
-                    <!-- Filter Controls -->
-                    <div class="mb-4 flex gap-4 items-center bg-gray-50 p-3 rounded">
-                      <div class="flex-1">
-                        <label class="text-sm font-medium text-gray-700 mb-1 block">
-                          <i class="fas fa-filter mr-1"></i>Filter by Linked Entity:
-                        </label>
-                        <select id="linked-entity-filter" class="w-full px-3 py-2 border rounded text-sm" onchange="filterScreeningTable()">
-                          <option value="">All Entities (\${consolidatedList.length} entries)</option>
-                          <option value="\${targetCompanyName}" class="font-semibold">
-                            🏢 \${targetCompanyName} Only (Main Entity)
-                          </option>
-                          <optgroup label="All Linked Entities">
-                            \${uniqueLinkedEntities.map(entity => {
-                              const count = consolidatedList.filter(p => p.linkedEntities.includes(entity)).length;
-                              return \`<option value="\${entity}">\${entity} (\${count})</option>\`;
-                            }).join('')}
-                          </optgroup>
-                        </select>
-                      </div>
-                      <div class="flex flex-col justify-end">
-                        <button onclick="clearScreeningFilter()" class="px-3 py-2 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300">
-                          <i class="fas fa-times mr-1"></i>Clear Filter
-                        </button>
-                      </div>
-                    </div>
                     
                     <div class="overflow-x-auto">
                       <table id="screening-table" class="w-full text-sm border">
@@ -1031,10 +1000,7 @@ app.get('/item/:id', async (c) => {
                     \` : '<p class="text-gray-600">No screening data available.</p>';
                   })()}
 
-                  <div class="mt-4 p-3 bg-gray-50 rounded text-xs text-gray-600">
-                    <p><strong>Data Sources:</strong> Companies House API, PSC Register, Ownership Tree Analysis</p>
-                    <p class="mt-1"><strong>Note:</strong> This screening list is based on public register data and includes all entities from the ownership structure.</p>
-                  </div>
+
                 </div>
               \`;
               
@@ -1602,6 +1568,12 @@ app.get('/item/:id', async (c) => {
               // Company icon with country flag
               const icon = node.isCompany ? '🏢' : '👤';
               const flag = getCountryFlag(node.country);
+              
+              // DEBUG: Log country flag rendering
+              if (depth <= 2) {
+                console.log('[FLAG DEBUG] Node:', node.name, 'Country:', node.country, 'Flag:', flag, 'Has country:', !!node.country, 'Has flag:', !!flag);
+              }
+              
               svg += '<text x="' + (node.x - 90) + '" y="' + (node.y - 10) + '" font-size="16">' + icon + '</text>';
               if (flag && node.country) {
                 svg += '<text x="' + (node.x + 80) + '" y="' + (node.y - 10) + '" font-size="16" title="' + escapeXml(node.country) + '">' + flag + '</text>';
