@@ -760,21 +760,7 @@ app.get('/item/:id', async (c) => {
 
                 <!-- KYC/AML Screening Requirements -->
                 <div class="card">
-                  <!-- Download CSV and Print buttons hidden temporarily (showing too many parties)
-                  <div class="flex justify-between items-center mb-4">
-                    <div class="flex gap-2">
-                      <a href="/api/item/\${item.id}/screening-export.csv" 
-                         class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                         download>
-                        <i class="fas fa-download mr-2"></i>Download CSV
-                      </a>
-                      <button onclick="window.print()" 
-                              class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium">
-                        <i class="fas fa-print mr-2"></i>Print
-                      </button>
-                    </div>
-                  </div>
-                  -->
+                  ${ /* Download CSV and Print buttons hidden temporarily (showing too many parties) */ '' }
 
                   <!-- Consolidated Screening List -->
                   \${(() => {
