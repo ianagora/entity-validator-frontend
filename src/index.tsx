@@ -2371,15 +2371,32 @@ app.get('/svgs', async (c) => {
 
           // Parse filename to extract company info
           function parseFilename(filename) {
-            // Format: CompanyName_CompanyNumber_Timestamp.svg
+            // Format: CompanyName_CompanyNumber_itemID_YYYYMMDD_HHMMSS.svg
+            // Example: ACME_LTD_12345678_item123_20260108_183000.svg
             const parts = filename.replace('.svg', '').split('_');
-            const timestamp = parts.pop(); // Remove timestamp
-            const companyNumber = parts.pop(); // Get company number
-            const companyName = parts.join(' '); // Remaining is company name
+            
+            // Extract timestamp (last 2 parts: YYYYMMDD_HHMMSS)
+            const timePart = parts.pop(); // HHMMSS
+            const datePart = parts.pop(); // YYYYMMDD
+            const timestamp = `${datePart}_${timePart}`;
+            
+            // Extract item_id (now last part, starts with "item")
+            let itemId = null;
+            if (parts.length > 0 && parts[parts.length - 1].startsWith('item')) {
+              const itemPart = parts.pop();
+              itemId = itemPart.replace('item', ''); // Extract number from "item123"
+            }
+            
+            // Extract company number (now last part)
+            const companyNumber = parts.pop();
+            
+            // Remaining parts are company name
+            const companyName = parts.join(' ');
             
             return {
               companyName: companyName || 'Unknown',
               companyNumber: companyNumber || 'N/A',
+              itemId: itemId,
               timestamp: timestamp
             };
           }
@@ -2491,50 +2508,78 @@ app.get('/svgs', async (c) => {
             try {
               const info = parseFilename(filename);
               
-              // Extract item ID from filename (we need to get it from the backend)
-              // For now, we'll fetch the SVG directly by filename
-              // Note: This requires backend to support fetching by filename
+              if (!info.itemId) {
+                alert('Cannot extract item ID from filename. Please view from entity detail page.');
+                return;
+              }
               
               document.getElementById('modal-title').textContent = \`\${info.companyName} (\${info.companyNumber})\`;
               document.getElementById('modal-svg-container').innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-4xl text-gray-400"></i><p class="mt-2 text-gray-500">Loading SVG...</p></div>';
               document.getElementById('svg-modal').classList.add('active');
               
-              // For now, show message that preview requires item ID
-              // In production, you'd store item_id in the filename or database
+              // Fetch SVG from backend using item ID
+              const response = await fetch(\`/api/item/\${info.itemId}/svg\`);
+              if (!response.ok) {
+                throw new Error('Failed to fetch SVG');
+              }
+              
+              const svgContent = await response.text();
+              document.getElementById('modal-svg-container').innerHTML = svgContent;
+              
+              // Set download button
+              document.getElementById('modal-download-btn').onclick = () => downloadSVG(filename);
+              
+              console.log('[SVG Manager] Preview loaded:', filename);
+              
+            } catch (error) {
+              console.error('[SVG Manager] Preview failed:', error);
               document.getElementById('modal-svg-container').innerHTML = \`
                 <div class="text-center py-8">
-                  <i class="fas fa-info-circle text-blue-500 text-5xl mb-4"></i>
-                  <p class="text-gray-700 font-semibold mb-2">Preview Feature</p>
+                  <i class="fas fa-exclamation-circle text-red-500 text-5xl mb-4"></i>
+                  <p class="text-gray-700 font-semibold mb-2">Preview Failed</p>
                   <p class="text-gray-600 text-sm mb-4">
-                    To preview SVGs, click "View" on the entity detail page.
+                    \${error.message}
                   </p>
                   <p class="text-gray-500 text-xs">
                     Filename: \${filename}
                   </p>
                 </div>
               \`;
-              
-              // Set download button
-              document.getElementById('modal-download-btn').onclick = () => downloadSVG(filename);
-              
-            } catch (error) {
-              console.error('[SVG Manager] Preview failed:', error);
-              alert('Failed to preview SVG: ' + error.message);
             }
           }
 
           // Download SVG
-          function downloadSVG(filename) {
-            // Since we don't have item ID, we need to extract it from the filename or use a different endpoint
-            // For now, trigger browser download using the filename
+          async function downloadSVG(filename) {
             const info = parseFilename(filename);
-            const link = document.createElement('a');
-            link.download = filename;
-            // This would need backend support for download by filename
-            // For now, show message
-            alert('Download feature requires item ID mapping. Use the "Download SVG" button on entity detail pages for now.');
             
-            console.log('[SVG Manager] Download requested:', filename);
+            if (!info.itemId) {
+              alert('Cannot extract item ID from filename. Please download from entity detail page.');
+              return;
+            }
+            
+            try {
+              const response = await fetch(\`/api/item/\${info.itemId}/svg\`);
+              if (!response.ok) {
+                throw new Error('Failed to fetch SVG');
+              }
+              
+              const svgContent = await response.text();
+              const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+              const url = URL.createObjectURL(blob);
+              
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = filename;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              URL.revokeObjectURL(url);
+              
+              console.log('[SVG Manager] Downloaded:', filename);
+            } catch (error) {
+              console.error('[SVG Manager] Download failed:', error);
+              alert(\`Download failed: \${error.message}\`);
+            }
           }
 
           // Close modal
