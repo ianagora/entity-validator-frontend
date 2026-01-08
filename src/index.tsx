@@ -142,6 +142,29 @@ app.get('/api/batches', async (c) => {
   }
 })
 
+// Clear database (DEV only)
+app.post('/api/admin/clear-database', async (c) => {
+  try {
+    // Get admin key from request headers
+    const adminKey = c.req.header('X-Admin-Key')
+    
+    const response = await fetch(`${c.env.BACKEND_API_URL}/api/admin/clear-database`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`,
+        'X-Admin-Key': adminKey || '',
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    const data = await response.json()
+    return c.json(data, response.status)
+  } catch (error) {
+    return c.json({ error: 'Failed to clear database', details: String(error) }, 500)
+  }
+})
+
+
 // Get item details
 app.get('/api/item/:id', async (c) => {
   const itemId = c.req.param('id')
