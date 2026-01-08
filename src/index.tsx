@@ -322,6 +322,26 @@ app.get('/api/batch/:id/items', async (c) => {
   }
 })
 
+// Generate SVGs for all items in a batch
+app.post('/api/batch/:id/svgs/generate', async (c) => {
+  const batchId = c.req.param('id')
+  
+  try {
+    const response = await fetch(`${c.env.BACKEND_API_URL}/api/batch/${batchId}/svgs/generate`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    const data = await response.json()
+    return c.json(data, response.status)
+  } catch (error) {
+    return c.json({ error: 'Failed to generate SVGs', details: String(error) }, 500)
+  }
+})
+
 // Debug endpoint to test screening_list
 app.get('/api/debug/item/:id', async (c) => {
   const itemId = c.req.param('id')
@@ -2054,7 +2074,13 @@ app.get('/batch/:id', async (c) => {
               }).join('');
               
               document.getElementById('batch-details').innerHTML = 
-                '<h2 class="text-xl font-bold mb-4">Items (' + items.length + ')</h2>' +
+                '<div class="flex justify-between items-center mb-4">' +
+                  '<h2 class="text-xl font-bold">Items (' + items.length + ')</h2>' +
+                  '<button onclick="generateAllSVGs()" id="generate-svgs-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">' +
+                    '<i class="fas fa-magic mr-2"></i>Generate All SVGs' +
+                  '</button>' +
+                '</div>' +
+                '<div id="generate-status" class="mb-4 hidden"></div>' +
                 '<div class="overflow-x-auto">' +
                   '<table class="w-full">' +
                     '<thead class="bg-gray-50">' +
@@ -2084,6 +2110,57 @@ app.get('/batch/:id', async (c) => {
                     '<i class="fas fa-redo mr-2"></i>Retry' +
                   '</button>' +
                 '</div>';
+            }
+          }
+
+          async function generateAllSVGs() {
+            const button = document.getElementById('generate-svgs-btn');
+            const statusDiv = document.getElementById('generate-status');
+            
+            try {
+              // Disable button and show loading
+              button.disabled = true;
+              button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating SVGs...';
+              
+              statusDiv.className = 'mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg';
+              statusDiv.innerHTML = '<i class="fas fa-info-circle text-blue-600 mr-2"></i><span class="text-blue-800">Generating ownership structure diagrams for all items...</span>';
+              statusDiv.classList.remove('hidden');
+              
+              // Call backend to generate SVGs
+              const response = await axios.post('/api/batch/' + batchId + '/svgs/generate');
+              
+              if (response.data.success) {
+                statusDiv.className = 'mb-4 p-4 bg-green-50 border border-green-200 rounded-lg';
+                statusDiv.innerHTML = 
+                  '<i class="fas fa-check-circle text-green-600 mr-2"></i>' +
+                  '<span class="text-green-800 font-semibold">Success!</span> ' +
+                  '<span class="text-green-700">Generated ' + response.data.generated + ' SVG files.</span>' +
+                  '<a href="/svgs" class="ml-4 text-green-600 hover:text-green-800 font-medium">' +
+                    '<i class="fas fa-folder-open mr-1"></i>View SVG Manager' +
+                  '</a>';
+                
+                // Re-enable button
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-check mr-2"></i>SVGs Generated';
+                button.className = 'px-4 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed font-medium';
+                
+                console.log('[BATCH] Generated SVGs:', response.data);
+              } else {
+                throw new Error(response.data.error || 'Unknown error');
+              }
+              
+            } catch (error) {
+              console.error('[BATCH] SVG generation failed:', error);
+              
+              statusDiv.className = 'mb-4 p-4 bg-red-50 border border-red-200 rounded-lg';
+              statusDiv.innerHTML = 
+                '<i class="fas fa-exclamation-circle text-red-600 mr-2"></i>' +
+                '<span class="text-red-800 font-semibold">Failed:</span> ' +
+                '<span class="text-red-700">' + (error.response?.data?.error || error.message) + '</span>';
+              
+              // Re-enable button
+              button.disabled = false;
+              button.innerHTML = '<i class="fas fa-magic mr-2"></i>Generate All SVGs';
             }
           }
 
