@@ -258,6 +258,22 @@ app.get('/api/item/:id/svg', async (c) => {
   }
 })
 
+// List all saved SVGs
+app.get('/api/svgs/list', async (c) => {
+  try {
+    const response = await fetch(`${c.env.BACKEND_API_URL}/api/svgs/list`, {
+      headers: {
+        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
+      }
+    })
+    
+    const data = await response.json()
+    return c.json(data, response.status)
+  } catch (error) {
+    return c.json({ error: 'Failed to list SVGs', details: String(error) }, 500)
+  }
+})
+
 // Get batch items
 app.get('/api/batch/:id/items', async (c) => {
   const batchId = c.req.param('id')
@@ -340,14 +356,19 @@ app.get('/', (c) => {
     <body class="bg-gray-50">
         <div class="container mx-auto px-4 py-8 max-w-7xl">
             <!-- Header -->
-            <div class="mb-8">
-                <h1 class="text-4xl font-bold text-gray-900 mb-2">
-                    <i class="fas fa-building text-blue-600 mr-3"></i>
-                    BOCVerify
-                </h1>
-                <p class="text-gray-600 text-lg">
-                    Companies House entity beneficial ownership & control enrichment system
-                </p>
+            <div class="mb-8 flex items-center justify-between">
+                <div>
+                    <h1 class="text-4xl font-bold text-gray-900 mb-2">
+                        <i class="fas fa-building text-blue-600 mr-3"></i>
+                        BOCVerify
+                    </h1>
+                    <p class="text-gray-600 text-lg">
+                        Companies House entity beneficial ownership & control enrichment system
+                    </p>
+                </div>
+                <a href="/svgs" class="px-4 py-2 bg-white border-2 border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium">
+                    <i class="fas fa-folder mr-2"></i>SVG Storage
+                </a>
             </div>
 
             <!-- Stats Cards -->
@@ -2039,6 +2060,520 @@ app.get('/batch/:id', async (c) => {
           // Start loading immediately
           loadBatchDetails();
           console.log('[BATCH] loadBatchDetails() called');
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// SVG Storage Manager Page
+app.get('/svgs', async (c) => {
+  return c.html(/* html */`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>SVG Storage Manager - BOCVerify</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+          .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+          }
+          .badge-info { background: #3b82f6; color: white; }
+          .badge-success { background: #10b981; color: white; }
+          .badge-warning { background: #f59e0b; color: white; }
+          .svg-preview {
+            max-width: 200px;
+            max-height: 150px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 8px;
+            background: white;
+          }
+          .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.75);
+            z-index: 9999;
+            overflow: auto;
+          }
+          .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+          }
+          .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+          }
+        </style>
+    </head>
+    <body class="bg-gray-50">
+        <!-- Navigation -->
+        <nav class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <a href="/" class="flex items-center">
+                            <i class="fas fa-shield-alt text-blue-600 text-2xl mr-3"></i>
+                            <span class="text-xl font-bold text-gray-900">BOCVerify</span>
+                        </a>
+                        <div class="ml-10 flex space-x-4">
+                            <a href="/" class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                                <i class="fas fa-home mr-2"></i>Dashboard
+                            </a>
+                            <a href="/svgs" class="text-blue-600 bg-blue-50 px-3 py-2 rounded-md text-sm font-medium">
+                                <i class="fas fa-folder mr-2"></i>SVG Storage
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Header -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                            <i class="fas fa-folder-open text-blue-600 mr-3"></i>
+                            SVG Storage Manager
+                        </h1>
+                        <p class="text-gray-600">Browse and download all saved ownership structure diagrams</p>
+                    </div>
+                    <button onclick="refreshList()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-sync-alt mr-2"></i>Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div id="stats-cards" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <!-- Loading skeleton -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 animate-pulse">
+                    <div class="h-4 bg-gray-200 rounded w-1/2 mb-3"></div>
+                    <div class="h-8 bg-gray-200 rounded w-3/4"></div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 animate-pulse">
+                    <div class="h-4 bg-gray-200 rounded w-1/2 mb-3"></div>
+                    <div class="h-8 bg-gray-200 rounded w-3/4"></div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 animate-pulse">
+                    <div class="h-4 bg-gray-200 rounded w-1/2 mb-3"></div>
+                    <div class="h-8 bg-gray-200 rounded w-3/4"></div>
+                </div>
+            </div>
+
+            <!-- Search and Filters -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+                <div class="flex items-center space-x-4">
+                    <div class="flex-1">
+                        <input 
+                            type="text" 
+                            id="search-input" 
+                            placeholder="Search by company name or number..." 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            oninput="filterSVGs()"
+                        >
+                    </div>
+                    <select id="sort-select" onchange="sortSVGs()" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="date-desc">Newest First</option>
+                        <option value="date-asc">Oldest First</option>
+                        <option value="name-asc">Name A-Z</option>
+                        <option value="name-desc">Name Z-A</option>
+                        <option value="size-desc">Largest First</option>
+                        <option value="size-asc">Smallest First</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- SVG List -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <!-- Loading State -->
+                <div id="loading-state" class="text-center py-12">
+                    <i class="fas fa-spinner fa-spin text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-500">Loading SVG files...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="hidden text-center py-12">
+                    <i class="fas fa-folder-open text-6xl text-gray-300 mb-4"></i>
+                    <p class="text-gray-500 text-lg mb-2">No SVG files saved yet</p>
+                    <p class="text-gray-400 text-sm">Upload a batch and view entities to automatically save SVGs</p>
+                    <a href="/" class="inline-block mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-upload mr-2"></i>Upload Batch
+                    </a>
+                </div>
+
+                <!-- Error State -->
+                <div id="error-state" class="hidden text-center py-12">
+                    <i class="fas fa-exclamation-triangle text-6xl text-red-400 mb-4"></i>
+                    <p class="text-red-600 font-semibold mb-2">Failed to load SVG files</p>
+                    <p id="error-message" class="text-gray-600 text-sm mb-4"></p>
+                    <button onclick="refreshList()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-redo mr-2"></i>Try Again
+                    </button>
+                </div>
+
+                <!-- Table -->
+                <div id="svg-table" class="hidden overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preview</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company Number</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="svg-tbody" class="bg-white divide-y divide-gray-200">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Warning Banner -->
+            <div class="mt-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
+                <div class="flex">
+                    <i class="fas fa-exclamation-triangle text-yellow-400 text-xl mr-3 mt-0.5"></i>
+                    <div>
+                        <p class="text-sm font-medium text-yellow-800">Temporary Storage Warning</p>
+                        <p class="text-sm text-yellow-700 mt-1">
+                            SVG files are stored on Railway's ephemeral file system. They will be lost on deployment/restart. 
+                            For permanent storage, migrate to Cloudflare R2.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SVG Preview Modal -->
+        <div id="svg-modal" class="modal">
+            <div class="modal-content">
+                <div class="bg-white p-6 rounded-lg">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 id="modal-title" class="text-xl font-bold text-gray-900">SVG Preview</h3>
+                        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times text-2xl"></i>
+                        </button>
+                    </div>
+                    <div id="modal-svg-container" class="border border-gray-200 rounded-lg p-4 bg-gray-50 overflow-auto" style="max-height: 70vh;">
+                        <!-- SVG will be injected here -->
+                    </div>
+                    <div class="mt-4 flex justify-end space-x-3">
+                        <button onclick="closeModal()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                            Close
+                        </button>
+                        <button id="modal-download-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            <i class="fas fa-download mr-2"></i>Download
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script>
+          let allSVGs = [];
+          let filteredSVGs = [];
+
+          // Load SVG list
+          async function loadSVGs() {
+            try {
+              console.log('[SVG Manager] Loading SVG list...');
+              
+              const response = await axios.get('/api/svgs/list');
+              const data = response.data;
+              
+              console.log('[SVG Manager] Loaded:', data.total_count, 'SVGs');
+              
+              allSVGs = data.files || [];
+              filteredSVGs = [...allSVGs];
+              
+              // Update stats
+              updateStats(data);
+              
+              // Render table
+              if (allSVGs.length === 0) {
+                showEmptyState();
+              } else {
+                showTable();
+                renderTable();
+              }
+              
+            } catch (error) {
+              console.error('[SVG Manager] Failed to load SVGs:', error);
+              showErrorState(error.message);
+            }
+          }
+
+          // Update stats cards
+          function updateStats(data) {
+            document.getElementById('stats-cards').innerHTML = \`
+              <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0">
+                    <i class="fas fa-file-image text-3xl text-blue-500"></i>
+                  </div>
+                  <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Total SVGs</p>
+                    <p class="text-2xl font-bold text-gray-900">\${data.total_count || 0}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0">
+                    <i class="fas fa-hdd text-3xl text-green-500"></i>
+                  </div>
+                  <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Total Size</p>
+                    <p class="text-2xl font-bold text-gray-900">\${data.total_size_mb ? data.total_size_mb.toFixed(2) : '0.00'} MB</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0">
+                    <i class="fas fa-clock text-3xl text-purple-500"></i>
+                  </div>
+                  <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Latest</p>
+                    <p class="text-2xl font-bold text-gray-900">\${data.files && data.files.length > 0 ? new Date(data.files[0].created).toLocaleDateString() : 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+            \`;
+          }
+
+          // Parse filename to extract company info
+          function parseFilename(filename) {
+            // Format: CompanyName_CompanyNumber_Timestamp.svg
+            const parts = filename.replace('.svg', '').split('_');
+            const timestamp = parts.pop(); // Remove timestamp
+            const companyNumber = parts.pop(); // Get company number
+            const companyName = parts.join(' '); // Remaining is company name
+            
+            return {
+              companyName: companyName || 'Unknown',
+              companyNumber: companyNumber || 'N/A',
+              timestamp: timestamp
+            };
+          }
+
+          // Render table
+          function renderTable() {
+            const tbody = document.getElementById('svg-tbody');
+            
+            if (filteredSVGs.length === 0) {
+              tbody.innerHTML = \`
+                <tr>
+                  <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                    <i class="fas fa-search text-4xl mb-2"></i>
+                    <p>No SVGs match your search</p>
+                  </td>
+                </tr>
+              \`;
+              return;
+            }
+            
+            tbody.innerHTML = filteredSVGs.map((svg, index) => {
+              const info = parseFilename(svg.filename);
+              const createdDate = new Date(svg.created);
+              
+              return \`
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <button 
+                      onclick="previewSVG('\${svg.filename}')" 
+                      class="text-blue-600 hover:text-blue-800"
+                      title="Preview SVG"
+                    >
+                      <i class="fas fa-eye text-2xl"></i>
+                    </button>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="text-sm font-medium text-gray-900">\${info.companyName}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900 font-mono">\${info.companyNumber}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="badge badge-info">\${svg.size_kb} KB</span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-500">
+                      \${createdDate.toLocaleDateString()} \${createdDate.toLocaleTimeString()}
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm">
+                    <button 
+                      onclick="downloadSVG('\${svg.filename}')" 
+                      class="text-green-600 hover:text-green-800 mr-3"
+                      title="Download SVG"
+                    >
+                      <i class="fas fa-download"></i> Download
+                    </button>
+                  </td>
+                </tr>
+              \`;
+            }).join('');
+          }
+
+          // Filter SVGs
+          function filterSVGs() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            
+            filteredSVGs = allSVGs.filter(svg => {
+              const info = parseFilename(svg.filename);
+              return info.companyName.toLowerCase().includes(searchTerm) ||
+                     info.companyNumber.toLowerCase().includes(searchTerm) ||
+                     svg.filename.toLowerCase().includes(searchTerm);
+            });
+            
+            sortSVGs();
+          }
+
+          // Sort SVGs
+          function sortSVGs() {
+            const sortBy = document.getElementById('sort-select').value;
+            
+            filteredSVGs.sort((a, b) => {
+              const aInfo = parseFilename(a.filename);
+              const bInfo = parseFilename(b.filename);
+              
+              switch(sortBy) {
+                case 'date-desc':
+                  return new Date(b.created) - new Date(a.created);
+                case 'date-asc':
+                  return new Date(a.created) - new Date(b.created);
+                case 'name-asc':
+                  return aInfo.companyName.localeCompare(bInfo.companyName);
+                case 'name-desc':
+                  return bInfo.companyName.localeCompare(aInfo.companyName);
+                case 'size-desc':
+                  return b.size_kb - a.size_kb;
+                case 'size-asc':
+                  return a.size_kb - b.size_kb;
+                default:
+                  return 0;
+              }
+            });
+            
+            renderTable();
+          }
+
+          // Preview SVG
+          async function previewSVG(filename) {
+            try {
+              const info = parseFilename(filename);
+              
+              // Extract item ID from filename (we need to get it from the backend)
+              // For now, we'll fetch the SVG directly by filename
+              // Note: This requires backend to support fetching by filename
+              
+              document.getElementById('modal-title').textContent = \`\${info.companyName} (\${info.companyNumber})\`;
+              document.getElementById('modal-svg-container').innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-4xl text-gray-400"></i><p class="mt-2 text-gray-500">Loading SVG...</p></div>';
+              document.getElementById('svg-modal').classList.add('active');
+              
+              // For now, show message that preview requires item ID
+              // In production, you'd store item_id in the filename or database
+              document.getElementById('modal-svg-container').innerHTML = \`
+                <div class="text-center py-8">
+                  <i class="fas fa-info-circle text-blue-500 text-5xl mb-4"></i>
+                  <p class="text-gray-700 font-semibold mb-2">Preview Feature</p>
+                  <p class="text-gray-600 text-sm mb-4">
+                    To preview SVGs, click "View" on the entity detail page.
+                  </p>
+                  <p class="text-gray-500 text-xs">
+                    Filename: \${filename}
+                  </p>
+                </div>
+              \`;
+              
+              // Set download button
+              document.getElementById('modal-download-btn').onclick = () => downloadSVG(filename);
+              
+            } catch (error) {
+              console.error('[SVG Manager] Preview failed:', error);
+              alert('Failed to preview SVG: ' + error.message);
+            }
+          }
+
+          // Download SVG
+          function downloadSVG(filename) {
+            // Since we don't have item ID, we need to extract it from the filename or use a different endpoint
+            // For now, trigger browser download using the filename
+            const info = parseFilename(filename);
+            const link = document.createElement('a');
+            link.download = filename;
+            // This would need backend support for download by filename
+            // For now, show message
+            alert('Download feature requires item ID mapping. Use the "Download SVG" button on entity detail pages for now.');
+            
+            console.log('[SVG Manager] Download requested:', filename);
+          }
+
+          // Close modal
+          function closeModal() {
+            document.getElementById('svg-modal').classList.remove('active');
+          }
+
+          // Show states
+          function showTable() {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('error-state').classList.add('hidden');
+            document.getElementById('svg-table').classList.remove('hidden');
+          }
+
+          function showEmptyState() {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('error-state').classList.add('hidden');
+            document.getElementById('svg-table').classList.add('hidden');
+            document.getElementById('empty-state').classList.remove('hidden');
+          }
+
+          function showErrorState(message) {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('svg-table').classList.add('hidden');
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('error-state').classList.remove('hidden');
+          }
+
+          // Refresh list
+          function refreshList() {
+            document.getElementById('loading-state').classList.remove('hidden');
+            document.getElementById('svg-table').classList.add('hidden');
+            loadSVGs();
+          }
+
+          // Initialize
+          loadSVGs();
         </script>
     </body>
     </html>
