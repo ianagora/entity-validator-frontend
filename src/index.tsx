@@ -207,6 +207,57 @@ app.get('/api/item/:id/screening-export.csv', async (c) => {
   }
 })
 
+// Save SVG to backend
+app.post('/api/item/:id/save-svg', async (c) => {
+  const itemId = c.req.param('id')
+  
+  try {
+    const body = await c.req.json()
+    
+    const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}/save-svg`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    })
+    
+    const data = await response.json()
+    return c.json(data, response.status)
+  } catch (error) {
+    return c.json({ error: 'Failed to save SVG', details: String(error) }, 500)
+  }
+})
+
+// Get saved SVG
+app.get('/api/item/:id/svg', async (c) => {
+  const itemId = c.req.param('id')
+  
+  try {
+    const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}/svg`, {
+      headers: {
+        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
+      }
+    })
+    
+    if (!response.ok) {
+      const error = await response.json()
+      return c.json(error, response.status)
+    }
+    
+    // Return SVG file
+    const svgData = await response.text()
+    return new Response(svgData, {
+      headers: {
+        'Content-Type': 'image/svg+xml'
+      }
+    })
+  } catch (error) {
+    return c.json({ error: 'Failed to retrieve SVG', details: String(error) }, 500)
+  }
+})
+
 // Get batch items
 app.get('/api/batch/:id/items', async (c) => {
   const batchId = c.req.param('id')
@@ -1247,6 +1298,42 @@ app.get('/item/:id', async (c) => {
             }
           }
           
+          // Auto-save SVG to backend storage
+          async function autoSaveSVG() {
+            const svg = document.querySelector('#ownership-tree-container svg');
+            if (!svg) {
+              console.log('[SVG Auto-Save] No SVG found, skipping auto-save');
+              return;
+            }
+            
+            try {
+              console.log('[SVG Auto-Save] Starting auto-save for item', itemId);
+              
+              // Serialize SVG
+              const xmlDeclaration = String.fromCharCode(60, 63) + 'xml version="1.0" encoding="UTF-8"' + String.fromCharCode(63, 62) + '\\n';
+              const svgData = xmlDeclaration + new XMLSerializer().serializeToString(svg);
+              
+              // Save to backend
+              const response = await axios.post(\`/api/item/\${itemId}/save-svg\`, {
+                svg_data: svgData
+              });
+              
+              if (response.data.success) {
+                console.log('[SVG Auto-Save] ✅ Saved:', response.data.filename, '(' + response.data.file_size_kb + ' KB)');
+                
+                // Optional: Show subtle notification
+                // const notification = document.createElement('div');
+                // notification.innerHTML = '<i class="fas fa-check-circle"></i> SVG auto-saved';
+                // notification.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#10b981;color:white;padding:12px 20px;border-radius:8px;font-size:14px;z-index:9999;';
+                // document.body.appendChild(notification);
+                // setTimeout(() => notification.remove(), 3000);
+              }
+            } catch (error) {
+              console.error('[SVG Auto-Save] Failed:', error);
+              // Silent fail - don't interrupt user experience
+            }
+          }
+          
           // Invert ownership tree to show UBOs at top, target company at bottom
           function invertOwnershipTree(tree) {
             if (!tree) return null;
@@ -1556,6 +1643,11 @@ app.get('/item/:id', async (c) => {
               const container = document.getElementById('ownership-tree-container');
               if (container) {
                 container.innerHTML = svg;
+                
+                // Auto-save SVG to backend
+                setTimeout(() => {
+                  autoSaveSVG();
+                }, 1000);
               }
             }, 100);
             
