@@ -2378,7 +2378,7 @@ app.get('/svgs', async (c) => {
             // Extract timestamp (last 2 parts: YYYYMMDD_HHMMSS)
             const timePart = parts.pop(); // HHMMSS
             const datePart = parts.pop(); // YYYYMMDD
-            const timestamp = `${datePart}_${timePart}`;
+            const timestamp = datePart + '_' + timePart;
             
             // Extract item_id (now last part, starts with "item")
             let itemId = null;
