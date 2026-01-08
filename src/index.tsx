@@ -530,11 +530,14 @@ app.get('/', (c) => {
                 }
               });
 
-              clearMessage.innerHTML = \`<i class="fas fa-check-circle mr-2"></i>✓ Database cleared successfully! Deleted \${response.data.items_deleted || 0} items.\`;
+              const itemsDeleted = response.data.items_deleted || 0;
+              const batchesDeleted = response.data.batches_deleted || 0;
+              clearMessage.innerHTML = \`<i class="fas fa-check-circle mr-2"></i>✓ Database cleared! Deleted \${batchesDeleted} batches and \${itemsDeleted} items.\`;
               
-              // Refresh batches list
+              // Refresh batches list immediately
+              loadBatches();
+              
               setTimeout(() => {
-                loadBatches();
                 clearStatus.classList.add('hidden');
                 clearDbBtn.disabled = false;
               }, 3000);
