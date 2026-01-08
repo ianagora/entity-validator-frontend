@@ -364,6 +364,32 @@ app.get('/', (c) => {
                         </p>
                     </div>
                 </div>
+
+                <!-- DEV Environment: Clear Database Button -->
+                <div class="mt-6 p-4 bg-red-50 border-2 border-red-200 rounded-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold text-red-800 mb-1">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                Development Environment
+                            </h3>
+                            <p class="text-sm text-red-600">
+                                Clear all data from the DEV database (cannot be undone)
+                            </p>
+                        </div>
+                        <button id="clear-db-btn" class="bg-red-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-red-700 transition-colors">
+                            <i class="fas fa-trash-alt mr-2"></i>
+                            Clear Database
+                        </button>
+                    </div>
+                    <div id="clear-status" class="mt-4 hidden">
+                        <div class="bg-red-100 border border-red-300 rounded-lg p-3">
+                            <p class="text-red-800 font-medium">
+                                <span id="clear-message"></span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Recent Batches -->
@@ -457,6 +483,42 @@ app.get('/', (c) => {
             } catch (error) {
               uploadMessage.textContent = \`✗ Upload failed: \${error.response?.data?.error || error.message}\`;
               uploadBtn.disabled = false;
+            }
+          });
+
+          // Clear database handler (DEV only)
+          const clearDbBtn = document.getElementById('clear-db-btn');
+          const clearStatus = document.getElementById('clear-status');
+          const clearMessage = document.getElementById('clear-message');
+
+          clearDbBtn.addEventListener('click', async () => {
+            if (!confirm('⚠️ WARNING: This will permanently delete ALL data from the DEV database.\\n\\nThis action cannot be undone.\\n\\nAre you sure you want to continue?')) {
+              return;
+            }
+
+            clearDbBtn.disabled = true;
+            clearStatus.classList.remove('hidden');
+            clearMessage.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Clearing database...';
+
+            try {
+              const response = await axios.post('/api/admin/clear-database', {}, {
+                headers: {
+                  'X-Admin-Key': 'clear-dev-db-2024'
+                }
+              });
+
+              clearMessage.innerHTML = \`<i class="fas fa-check-circle mr-2"></i>✓ Database cleared successfully! Deleted \${response.data.items_deleted || 0} items.\`;
+              
+              // Refresh batches list
+              setTimeout(() => {
+                loadBatches();
+                clearStatus.classList.add('hidden');
+                clearDbBtn.disabled = false;
+              }, 3000);
+
+            } catch (error) {
+              clearMessage.innerHTML = \`<i class="fas fa-times-circle mr-2"></i>✗ Failed to clear database: \${error.response?.data?.detail || error.message}\`;
+              clearDbBtn.disabled = false;
             }
           });
 
@@ -1016,7 +1078,6 @@ app.get('/item/:id', async (c) => {
                             <tr class="screening-row hover:bg-gray-50 \${person.isCompany ? 'bg-blue-50' : ''}" data-linked-entities="\${person.linkedEntities.join('||')}" data-index="\${idx}">
                               <td class="px-4 py-2 border font-medium">
                                 \${person.isCompany ? '🏢' : '👤'} \${person.name}
-                                \${person.companyNumber ? \`<br><span class="text-xs text-gray-500">\${person.companyNumber}</span>\` : ''}
                               </td>
                               <td class="px-4 py-2 border">
                                 \${person.roles.map(role => \`<span class="badge badge-info mr-1 mb-1">\${role}</span>\`).join('')}
