@@ -274,6 +274,36 @@ app.get('/api/svgs/list', async (c) => {
   }
 })
 
+// Download all SVGs as ZIP
+app.get('/api/svgs/download-all', async (c) => {
+  try {
+    const response = await fetch(`${c.env.BACKEND_API_URL}/api/svgs/download-all`, {
+      headers: {
+        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
+      }
+    })
+    
+    if (!response.ok) {
+      const data = await response.json()
+      return c.json(data, response.status)
+    }
+    
+    // Stream the ZIP file
+    const blob = await response.blob()
+    const contentDisposition = response.headers.get('Content-Disposition')
+    
+    return new Response(blob, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/zip',
+        'Content-Disposition': contentDisposition || 'attachment; filename=ownership_structures.zip'
+      }
+    })
+  } catch (error) {
+    return c.json({ error: 'Failed to download SVGs', details: String(error) }, 500)
+  }
+})
+
 // Get batch items
 app.get('/api/batch/:id/items', async (c) => {
   const batchId = c.req.param('id')
@@ -2159,9 +2189,14 @@ app.get('/svgs', async (c) => {
                         </h1>
                         <p class="text-gray-600">Browse and download all saved ownership structure diagrams</p>
                     </div>
-                    <button onclick="refreshList()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                        <i class="fas fa-sync-alt mr-2"></i>Refresh
-                    </button>
+                    <div class="flex space-x-3">
+                        <button onclick="downloadAllSVGs()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            <i class="fas fa-download mr-2"></i>Download All (ZIP)
+                        </button>
+                        <button onclick="refreshList()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-sync-alt mr-2"></i>Refresh
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -2579,6 +2614,56 @@ app.get('/svgs', async (c) => {
             } catch (error) {
               console.error('[SVG Manager] Download failed:', error);
               alert(\`Download failed: \${error.message}\`);
+            }
+          }
+
+          // Download all SVGs as ZIP
+          async function downloadAllSVGs() {
+            try {
+              const button = event.target.closest('button');
+              const originalText = button.innerHTML;
+              button.disabled = true;
+              button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating ZIP...';
+              
+              const response = await fetch('/api/svgs/download-all');
+              if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to download');
+              }
+              
+              // Download the ZIP file
+              const blob = await response.blob();
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              
+              // Extract filename from Content-Disposition header
+              const contentDisposition = response.headers.get('Content-Disposition');
+              let filename = 'ownership_structures.zip';
+              if (contentDisposition) {
+                const matches = /filename=([^;]+)/.exec(contentDisposition);
+                if (matches && matches[1]) {
+                  filename = matches[1].replace(/"/g, '');
+                }
+              }
+              
+              link.download = filename;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              URL.revokeObjectURL(url);
+              
+              button.disabled = false;
+              button.innerHTML = originalText;
+              
+              console.log('[SVG Manager] Downloaded all SVGs as ZIP');
+            } catch (error) {
+              console.error('[SVG Manager] Download all failed:', error);
+              alert(\`Download failed: \${error.message}\`);
+              
+              const button = event.target.closest('button');
+              button.disabled = false;
+              button.innerHTML = '<i class="fas fa-download mr-2"></i>Download All (ZIP)';
             }
           }
 
