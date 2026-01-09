@@ -2123,31 +2123,100 @@ app.get('/batch/:id', async (c) => {
               button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating SVGs...';
               
               statusDiv.className = 'mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg';
-              statusDiv.innerHTML = '<i class="fas fa-info-circle text-blue-600 mr-2"></i><span class="text-blue-800">Generating ownership structure diagrams for all items...</span>';
+              statusDiv.innerHTML = '<i class="fas fa-info-circle text-blue-600 mr-2"></i><span class="text-blue-800">Loading batch items...</span>';
               statusDiv.classList.remove('hidden');
               
-              // Call backend to generate SVGs
-              const response = await axios.post('/api/batch/' + batchId + '/svgs/generate');
+              // Get all items in batch
+              const itemsResponse = await axios.get('/api/batch/' + batchId + '/items');
+              const items = itemsResponse.data.items || [];
               
-              if (response.data.success) {
-                statusDiv.className = 'mb-4 p-4 bg-green-50 border border-green-200 rounded-lg';
-                statusDiv.innerHTML = 
-                  '<i class="fas fa-check-circle text-green-600 mr-2"></i>' +
-                  '<span class="text-green-800 font-semibold">Success!</span> ' +
-                  '<span class="text-green-700">Generated ' + response.data.generated + ' SVG files.</span>' +
-                  '<a href="/svgs" class="ml-4 text-green-600 hover:text-green-800 font-medium">' +
-                    '<i class="fas fa-folder-open mr-1"></i>View SVG Manager' +
-                  '</a>';
-                
-                // Re-enable button
-                button.disabled = false;
-                button.innerHTML = '<i class="fas fa-check mr-2"></i>SVGs Generated';
-                button.className = 'px-4 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed font-medium';
-                
-                console.log('[BATCH] Generated SVGs:', response.data);
-              } else {
-                throw new Error(response.data.error || 'Unknown error');
+              if (items.length === 0) {
+                throw new Error('No items found in batch');
               }
+              
+              console.log('[BATCH] Generating SVGs for', items.length, 'items');
+              
+              let generated = 0;
+              let skipped = 0;
+              
+              // Process each item sequentially
+              for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                
+                // Update progress
+                statusDiv.innerHTML = 
+                  '<i class="fas fa-spinner fa-spin text-blue-600 mr-2"></i>' +
+                  '<span class="text-blue-800">Generating SVG ' + (i + 1) + ' of ' + items.length + '...</span>' +
+                  '<div class="mt-2 text-sm text-blue-600">' + item.input_name + '</div>';
+                
+                try {
+                  // Open item page in hidden iframe to trigger SVG generation
+                  await new Promise((resolve, reject) => {
+                    const iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    iframe.src = '/item/' + item.id;
+                    
+                    let resolved = false;
+                    
+                    // Wait for page to load and generate SVG
+                    iframe.onload = () => {
+                      // Give it time to generate and auto-save SVG (5 seconds)
+                      setTimeout(() => {
+                        if (!resolved) {
+                          resolved = true;
+                          document.body.removeChild(iframe);
+                          resolve();
+                        }
+                      }, 5000);
+                    };
+                    
+                    iframe.onerror = () => {
+                      if (!resolved) {
+                        resolved = true;
+                        document.body.removeChild(iframe);
+                        reject(new Error('Failed to load item page'));
+                      }
+                    };
+                    
+                    document.body.appendChild(iframe);
+                    
+                    // Timeout after 10 seconds
+                    setTimeout(() => {
+                      if (!resolved) {
+                        resolved = true;
+                        if (document.body.contains(iframe)) {
+                          document.body.removeChild(iframe);
+                        }
+                        reject(new Error('Timeout'));
+                      }
+                    }, 10000);
+                  });
+                  
+                  generated++;
+                  console.log('[BATCH] Generated SVG for item', item.id);
+                } catch (itemError) {
+                  console.error('[BATCH] Failed to generate SVG for item', item.id, ':', itemError);
+                  skipped++;
+                }
+              }
+              
+              // Success!
+              statusDiv.className = 'mb-4 p-4 bg-green-50 border border-green-200 rounded-lg';
+              statusDiv.innerHTML = 
+                '<i class="fas fa-check-circle text-green-600 mr-2"></i>' +
+                '<span class="text-green-800 font-semibold">Success!</span> ' +
+                '<span class="text-green-700">Generated ' + generated + ' full ownership tree SVG files' + 
+                (skipped > 0 ? ' (' + skipped + ' skipped)' : '') + '.</span>' +
+                '<a href="/svgs" class="ml-4 text-green-600 hover:text-green-800 font-medium">' +
+                  '<i class="fas fa-folder-open mr-1"></i>View SVG Manager' +
+                '</a>';
+              
+              // Update button
+              button.disabled = false;
+              button.innerHTML = '<i class="fas fa-check mr-2"></i>SVGs Generated';
+              button.className = 'px-4 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed font-medium';
+              
+              console.log('[BATCH] Completed: generated=' + generated + ', skipped=' + skipped);
               
             } catch (error) {
               console.error('[BATCH] SVG generation failed:', error);
