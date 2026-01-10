@@ -1720,10 +1720,11 @@ app.get('/item/:id', async (c) => {
               if (container) {
                 container.innerHTML = svg;
                 
-                // Auto-save SVG to backend
-                setTimeout(() => {
-                  autoSaveSVG();
-                }, 1000);
+                // DISABLED: Auto-save now handled by backend during enrichment
+                // Frontend auto-save was overwriting enhanced backend SVGs
+                // setTimeout(() => {
+                //   autoSaveSVG();
+                // }, 1000);
               }
             }, 100);
             
