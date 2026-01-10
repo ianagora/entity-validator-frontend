@@ -11,6 +11,11 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>()
 
+// Helper to get backend URL with fallback
+function getBackendUrl(c: any): string {
+  return c.env?.BACKEND_API_URL || 'https://entity-validator-backend-production-6962.up.railway.app'
+}
+
 // Enable CORS for API routes
 app.use('/api/*', cors())
 
@@ -44,7 +49,7 @@ function getStatusBadge(status: string): string {
 
 // Health check
 app.get('/api/health', async (c) => {
-  const backendUrl = c.env.BACKEND_API_URL
+  const backendUrl = getBackendUrl(c)
   
   try {
     const response = await fetch(`${backendUrl}/health`, {
@@ -83,7 +88,7 @@ app.post('/api/batch/upload', async (c) => {
   backendFormData.append('file', file)
   
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL}/api/batch/upload`, {
+    const response = await fetch(`${getBackendUrl(c)}/api/batch/upload`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
@@ -103,7 +108,7 @@ app.get('/api/batch/:id/status', async (c) => {
   const batchId = c.req.param('id')
   
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL}/api/batch/${batchId}/status`, {
+    const response = await fetch(`${getBackendUrl(c)}/api/batch/${batchId}/status`, {
       headers: {
         'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
       }
@@ -129,7 +134,7 @@ app.get('/api/version', (c) => {
 // Get all batches
 app.get('/api/batches', async (c) => {
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL}/api/batches`, {
+    const response = await fetch(`${getBackendUrl(c)}/api/batches`, {
       headers: {
         'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
       }
@@ -148,7 +153,7 @@ app.post('/api/admin/clear-database', async (c) => {
     // Get admin key from request headers
     const adminKey = c.req.header('X-Admin-Key')
     
-    const response = await fetch(`${c.env.BACKEND_API_URL}/api/admin/clear-database`, {
+    const response = await fetch(`${getBackendUrl(c)}/api/admin/clear-database`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`,
@@ -170,7 +175,7 @@ app.get('/api/item/:id', async (c) => {
   const itemId = c.req.param('id')
   
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}`, {
+    const response = await fetch(`${getBackendUrl(c)}/api/item/${itemId}`, {
       headers: {
         'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
       }
@@ -188,7 +193,7 @@ app.get('/api/item/:id/screening-export.csv', async (c) => {
   const itemId = c.req.param('id')
   
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}/screening-export.csv`, {
+    const response = await fetch(`${getBackendUrl(c)}/api/item/${itemId}/screening-export.csv`, {
       headers: {
         'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
       }
@@ -214,7 +219,7 @@ app.post('/api/item/:id/save-svg', async (c) => {
   try {
     const body = await c.req.json()
     
-    const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}/save-svg`, {
+    const response = await fetch(`${getBackendUrl(c)}/api/item/${itemId}/save-svg`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`,
@@ -235,7 +240,7 @@ app.get('/api/item/:id/svg', async (c) => {
   const itemId = c.req.param('id')
   
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}/svg`, {
+    const response = await fetch(`${getBackendUrl(c)}/api/item/${itemId}/svg`, {
       headers: {
         'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
       }
@@ -261,7 +266,7 @@ app.get('/api/item/:id/svg', async (c) => {
 // List all saved SVGs
 app.get('/api/svgs/list', async (c) => {
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL}/api/svgs/list`, {
+    const response = await fetch(`${getBackendUrl(c)}/api/svgs/list`, {
       headers: {
         'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
       }
@@ -277,7 +282,7 @@ app.get('/api/svgs/list', async (c) => {
 // Download all SVGs as ZIP
 app.get('/api/svgs/download-all', async (c) => {
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL}/api/svgs/download-all`, {
+    const response = await fetch(`${getBackendUrl(c)}/api/svgs/download-all`, {
       headers: {
         'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
       }
@@ -309,7 +314,7 @@ app.get('/api/batch/:id/items', async (c) => {
   const batchId = c.req.param('id')
   
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL}/api/batch/${batchId}/items`, {
+    const response = await fetch(`${getBackendUrl(c)}/api/batch/${batchId}/items`, {
       headers: {
         'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
       }
@@ -327,7 +332,7 @@ app.post('/api/batch/:id/svgs/generate', async (c) => {
   const batchId = c.req.param('id')
   
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL}/api/batch/${batchId}/svgs/generate`, {
+    const response = await fetch(`${getBackendUrl(c)}/api/batch/${batchId}/svgs/generate`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`,
@@ -347,7 +352,7 @@ app.get('/api/debug/item/:id', async (c) => {
   const itemId = c.req.param('id')
   
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}`, {
+    const response = await fetch(`${getBackendUrl(c)}/api/item/${itemId}`, {
       headers: {
         'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
       }
