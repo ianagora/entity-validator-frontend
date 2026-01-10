@@ -2126,44 +2126,55 @@ app.get('/batch/:id', async (c) => {
 
           async function openAllEntities() {
             const statusDiv = document.getElementById('generate-status');
+            const button = event.target;
             
             try {
-              // Get all items in batch
-              const itemsResponse = await axios.get('/api/batch/' + batchId + '/items');
-              const items = itemsResponse.data.items || [];
+              // Show processing message
+              button.disabled = true;
+              button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating SVGs...';
               
-              if (items.length === 0) {
-                alert('No items found in batch');
-                return;
-              }
-              
-              // Show info message
               statusDiv.className = 'mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg';
               statusDiv.innerHTML = 
-                '<i class="fas fa-info-circle text-blue-600 mr-2"></i>' +
-                '<span class="text-blue-800 font-semibold">Opening ' + items.length + ' entity pages...</span>' +
+                '<i class="fas fa-cog fa-spin text-blue-600 mr-2"></i>' +
+                '<span class="text-blue-800 font-semibold">Generating SVGs in background...</span>' +
                 '<div class="mt-2 text-sm text-blue-700">' +
-                  'Each page will automatically generate and save its ownership tree SVG.' +
-                '</div>' +
-                '<div class="mt-2 text-sm text-blue-600">' +
-                  'After all pages load (~30 seconds), visit <a href="/svgs" class="underline font-medium">SVG Manager</a> to download all SVGs.' +
+                  'This may take 10-30 seconds depending on batch size.' +
                 '</div>';
               statusDiv.classList.remove('hidden');
               
-              // Open each entity page in a new tab with a delay
-              items.forEach((item, index) => {
-                setTimeout(() => {
-                  const url = '/item/' + item.id;
-                  window.open(url, '_blank');
-                  console.log('[BATCH] Opened entity:', item.input_name);
-                }, index * 500); // Stagger by 500ms to avoid browser popup blocker
-              });
+              // Call backend batch SVG generation endpoint
+              const response = await axios.post('/api/batch/' + batchId + '/svgs/generate');
               
-              console.log('[BATCH] Opened', items.length, 'entity pages');
+              if (response.data.success) {
+                statusDiv.className = 'mb-4 p-4 bg-green-50 border border-green-200 rounded-lg';
+                statusDiv.innerHTML = 
+                  '<i class="fas fa-check-circle text-green-600 mr-2"></i>' +
+                  '<span class="text-green-800 font-semibold">✅ Generated ' + response.data.generated + ' SVG files!</span>' +
+                  '<div class="mt-2 text-sm text-green-700">' +
+                    'Visit <a href="/svgs" class="underline font-medium">SVG Manager</a> to download all SVGs as a ZIP.' +
+                  '</div>';
+                
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-check mr-2"></i>SVGs Generated';
+                
+                // Reset button after 3 seconds
+                setTimeout(() => {
+                  button.innerHTML = '<i class="fas fa-external-link-alt mr-2"></i>Open All & Generate SVGs';
+                }, 3000);
+              } else {
+                throw new Error('Generation failed');
+              }
               
             } catch (error) {
-              console.error('[BATCH] Failed to open entities:', error);
-              alert('Failed to load items: ' + error.message);
+              console.error('[BATCH] Failed to generate SVGs:', error);
+              statusDiv.className = 'mb-4 p-4 bg-red-50 border border-red-200 rounded-lg';
+              statusDiv.innerHTML = 
+                '<i class="fas fa-exclamation-circle text-red-600 mr-2"></i>' +
+                '<span class="text-red-800 font-semibold">Failed to generate SVGs</span>' +
+                '<div class="mt-2 text-sm text-red-700">' + error.message + '</div>';
+              
+              button.disabled = false;
+              button.innerHTML = '<i class="fas fa-external-link-alt mr-2"></i>Open All & Generate SVGs';
             }
           }
 
