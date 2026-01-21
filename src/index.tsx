@@ -229,6 +229,218 @@ app.get('/api/debug/item/:id', async (c) => {
   }
 })
 
+
+// Add these routes AFTER the API proxy routes and BEFORE the web UI routes
+
+// ==================== AUTHENTICATION ROUTES ====================
+
+// Login page
+app.get('/login', (c) => {
+  return c.html(/* html */`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Login - BOCVerify</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    </head>
+    <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex items-center justify-center">
+        <div class="max-w-md w-full mx-4">
+            <!-- Login Card -->
+            <div class="bg-white rounded-2xl shadow-2xl p-8">
+                <!-- Logo/Header -->
+                <div class="text-center mb-8">
+                    <div class="inline-block p-4 bg-blue-100 rounded-full mb-4">
+                        <i class="fas fa-building text-blue-600 text-4xl"></i>
+                    </div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">BOCVerify</h1>
+                    <p class="text-gray-600">Sign in to your account</p>
+                </div>
+
+                <!-- Error Message -->
+                <div id="error-message" class="hidden mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-circle text-red-600 mr-3"></i>
+                        <p class="text-red-800 text-sm" id="error-text"></p>
+                    </div>
+                </div>
+
+                <!-- Login Form -->
+                <form id="login-form" class="space-y-6">
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-envelope text-gray-400 mr-2"></i>
+                            Email Address
+                        </label>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            name="email"
+                            required
+                            placeholder="admin@entity-validator.local"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                        />
+                    </div>
+
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-lock text-gray-400 mr-2"></i>
+                            Password
+                        </label>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password"
+                            required
+                            placeholder="Enter your password"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                        />
+                    </div>
+
+                    <div class="flex items-center justify-between text-sm">
+                        <label class="flex items-center">
+                            <input type="checkbox" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                            <span class="text-gray-600">Remember me</span>
+                        </label>
+                    </div>
+
+                    <button 
+                        type="submit"
+                        id="login-button"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center"
+                    >
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        <span id="button-text">Sign In</span>
+                        <span id="loading-spinner" class="hidden ml-2">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </span>
+                    </button>
+                </form>
+
+                <!-- Default Credentials Note -->
+                <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p class="text-sm text-blue-800">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <strong>Default credentials:</strong><br>
+                        Email: admin@entity-validator.local<br>
+                        Password: ChangeMe123!
+                    </p>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="text-center mt-6 text-gray-600 text-sm">
+                <p>© 2026 BOCVerify. All rights reserved.</p>
+            </div>
+        </div>
+
+        <script>
+            const form = document.getElementById('login-form');
+            const errorMessage = document.getElementById('error-message');
+            const errorText = document.getElementById('error-text');
+            const loginButton = document.getElementById('login-button');
+            const buttonText = document.getElementById('button-text');
+            const loadingSpinner = document.getElementById('loading-spinner');
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                // Hide error message
+                errorMessage.classList.add('hidden');
+
+                // Show loading state
+                loginButton.disabled = true;
+                buttonText.textContent = 'Signing in...';
+                loadingSpinner.classList.remove('hidden');
+
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+
+                try {
+                    // Create form data for OAuth2 format
+                    const formData = new URLSearchParams();
+                    formData.append('username', email);
+                    formData.append('password', password);
+
+                    const response = await fetch('/api/auth/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: formData
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        // Store token
+                        localStorage.setItem('access_token', data.access_token);
+                        localStorage.setItem('user_email', email);
+                        
+                        // Redirect to dashboard
+                        window.location.href = '/';
+                    } else {
+                        // Show error
+                        errorText.textContent = data.detail || 'Login failed. Please check your credentials.';
+                        errorMessage.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    errorText.textContent = 'Network error. Please try again.';
+                    errorMessage.classList.remove('hidden');
+                } finally {
+                    // Reset button state
+                    loginButton.disabled = false;
+                    buttonText.textContent = 'Sign In';
+                    loadingSpinner.classList.add('hidden');
+                }
+            });
+
+            // Check if already logged in
+            if (localStorage.getItem('access_token')) {
+                window.location.href = '/';
+            }
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// Login API endpoint (proxy to backend)
+app.post('/api/auth/login', async (c) => {
+  const formData = await c.req.formData()
+  const username = formData.get('username')
+  const password = formData.get('password')
+  
+  try {
+    // Forward to backend OAuth2 endpoint
+    const backendFormData = new URLSearchParams()
+    backendFormData.append('username', username as string)
+    backendFormData.append('password', password as string)
+    
+    const response = await fetch(`${c.env.BACKEND_API_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: backendFormData
+    })
+    
+    const data = await response.json()
+    return c.json(data, response.status)
+  } catch (error) {
+    return c.json({ detail: 'Authentication service unavailable' }, 503)
+  }
+})
+
+// Logout endpoint
+app.post('/api/auth/logout', (c) => {
+  // Client-side logout (clear localStorage)
+  return c.json({ success: true, message: 'Logged out successfully' })
+})
+
+
 // ==================== WEB UI ROUTES ====================
 
 // Home / Dashboard
