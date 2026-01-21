@@ -637,14 +637,7 @@ app.get('/', (c) => {
                     if (header) {
                         const userDiv = document.createElement('div');
                         userDiv.className = 'flex items-center justify-between mb-4';
-                        userDiv.innerHTML = `
-                            <div class="flex items-center gap-4">
-                                <span class="text-gray-600"><i class="fas fa-user mr-2"></i>${userEmail}</span>
-                                <button onclick="logout()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition text-sm">
-                                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
-                                </button>
-                            </div>
-                        `;
+                        userDiv.innerHTML = '<div class="flex items-center gap-4"><span class="text-gray-600"><i class="fas fa-user mr-2"></i>' + userEmail + '</span><button onclick="logout()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition text-sm"><i class="fas fa-sign-out-alt mr-2"></i>Logout</button></div>';
                         header.insertBefore(userDiv, header.firstChild);
                     }
                 }
