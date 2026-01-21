@@ -653,7 +653,7 @@ app.get('/', (c) => {
                 // Configure axios to include auth token in all requests
                 const token = localStorage.getItem('access_token');
                 if (token) {
-                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                    axios.defaults.headers.common['Authorization'] = 'Bearer ' + token;
                 }
 
           // File input handling
