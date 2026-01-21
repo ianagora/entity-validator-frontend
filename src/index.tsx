@@ -83,7 +83,7 @@ app.post('/api/batch/upload', async (c) => {
   backendFormData.append('file', file)
   
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL}/api/batch/upload`, {
+    const response = await fetch(`${c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"}/api/batch/upload`, {
       method: 'POST',
       headers: {
         'X-API-Key': c.env.BACKEND_API_KEY || "ak_xtcpS8Eehujtu62wOgrhqg.jIY3zXjjEM9e2QSQmWAVBCsmO_TdTDM4Jt7P5nt4Ss8"
@@ -103,7 +103,7 @@ app.get('/api/batch/:id/status', async (c) => {
   const batchId = c.req.param('id')
   
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL}/api/batch/${batchId}/status`, {
+    const response = await fetch(`${c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"}/api/batch/${batchId}/status`, {
       headers: {
         'X-API-Key': c.env.BACKEND_API_KEY || "ak_xtcpS8Eehujtu62wOgrhqg.jIY3zXjjEM9e2QSQmWAVBCsmO_TdTDM4Jt7P5nt4Ss8"
       }
@@ -129,7 +129,7 @@ app.get('/api/version', (c) => {
 // Get all batches
 app.get('/api/batches', async (c) => {
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL}/api/batches`, {
+    const response = await fetch(`${c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"}/api/batches`, {
       headers: {
         'X-API-Key': c.env.BACKEND_API_KEY || "ak_xtcpS8Eehujtu62wOgrhqg.jIY3zXjjEM9e2QSQmWAVBCsmO_TdTDM4Jt7P5nt4Ss8"
       }
@@ -147,7 +147,7 @@ app.get('/api/item/:id', async (c) => {
   const itemId = c.req.param('id')
   
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}`, {
+    const response = await fetch(`${c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"}/api/item/${itemId}`, {
       headers: {
         'X-API-Key': c.env.BACKEND_API_KEY || "ak_xtcpS8Eehujtu62wOgrhqg.jIY3zXjjEM9e2QSQmWAVBCsmO_TdTDM4Jt7P5nt4Ss8"
       }
@@ -165,7 +165,7 @@ app.get('/api/item/:id/screening-export.csv', async (c) => {
   const itemId = c.req.param('id')
   
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}/screening-export.csv`, {
+    const response = await fetch(`${c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"}/api/item/${itemId}/screening-export.csv`, {
       headers: {
         'X-API-Key': c.env.BACKEND_API_KEY || "ak_xtcpS8Eehujtu62wOgrhqg.jIY3zXjjEM9e2QSQmWAVBCsmO_TdTDM4Jt7P5nt4Ss8"
       }
@@ -189,7 +189,7 @@ app.get('/api/batch/:id/items', async (c) => {
   const batchId = c.req.param('id')
   
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL}/api/batch/${batchId}/items`, {
+    const response = await fetch(`${c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"}/api/batch/${batchId}/items`, {
       headers: {
         'X-API-Key': c.env.BACKEND_API_KEY || "ak_xtcpS8Eehujtu62wOgrhqg.jIY3zXjjEM9e2QSQmWAVBCsmO_TdTDM4Jt7P5nt4Ss8"
       }
@@ -207,7 +207,7 @@ app.get('/api/debug/item/:id', async (c) => {
   const itemId = c.req.param('id')
   
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}`, {
+    const response = await fetch(`${c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"}/api/item/${itemId}`, {
       headers: {
         'X-API-Key': c.env.BACKEND_API_KEY || "ak_xtcpS8Eehujtu62wOgrhqg.jIY3zXjjEM9e2QSQmWAVBCsmO_TdTDM4Jt7P5nt4Ss8"
       }
@@ -419,7 +419,7 @@ app.post('/api/auth/login', async (c) => {
     backendFormData.append('username', username as string)
     backendFormData.append('password', password as string)
     
-    const response = await fetch(`${c.env.BACKEND_API_URL}/auth/login`, {
+    const response = await fetch(`${c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
