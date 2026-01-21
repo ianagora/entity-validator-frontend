@@ -44,12 +44,12 @@ function getStatusBadge(status: string): string {
 
 // Health check
 app.get('/api/health', async (c) => {
-  const backendUrl = c.env.BACKEND_API_URL
+  const backendUrl = c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"
   
   try {
     const response = await fetch(`${backendUrl}/health`, {
       headers: {
-        'X-API-Key': c.env.BACKEND_API_KEY
+        'X-API-Key': c.env.BACKEND_API_KEY || "ak_xtcpS8Eehujtu62wOgrhqg.jIY3zXjjEM9e2QSQmWAVBCsmO_TdTDM4Jt7P5nt4Ss8"
       }
     })
     const data = await response.json()
@@ -86,7 +86,7 @@ app.post('/api/batch/upload', async (c) => {
     const response = await fetch(`${c.env.BACKEND_API_URL}/api/batch/upload`, {
       method: 'POST',
       headers: {
-        'X-API-Key': c.env.BACKEND_API_KEY
+        'X-API-Key': c.env.BACKEND_API_KEY || "ak_xtcpS8Eehujtu62wOgrhqg.jIY3zXjjEM9e2QSQmWAVBCsmO_TdTDM4Jt7P5nt4Ss8"
       },
       body: backendFormData
     })
@@ -105,7 +105,7 @@ app.get('/api/batch/:id/status', async (c) => {
   try {
     const response = await fetch(`${c.env.BACKEND_API_URL}/api/batch/${batchId}/status`, {
       headers: {
-        'X-API-Key': c.env.BACKEND_API_KEY
+        'X-API-Key': c.env.BACKEND_API_KEY || "ak_xtcpS8Eehujtu62wOgrhqg.jIY3zXjjEM9e2QSQmWAVBCsmO_TdTDM4Jt7P5nt4Ss8"
       }
     })
     
@@ -131,7 +131,7 @@ app.get('/api/batches', async (c) => {
   try {
     const response = await fetch(`${c.env.BACKEND_API_URL}/api/batches`, {
       headers: {
-        'X-API-Key': c.env.BACKEND_API_KEY
+        'X-API-Key': c.env.BACKEND_API_KEY || "ak_xtcpS8Eehujtu62wOgrhqg.jIY3zXjjEM9e2QSQmWAVBCsmO_TdTDM4Jt7P5nt4Ss8"
       }
     })
     
@@ -149,7 +149,7 @@ app.get('/api/item/:id', async (c) => {
   try {
     const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}`, {
       headers: {
-        'X-API-Key': c.env.BACKEND_API_KEY
+        'X-API-Key': c.env.BACKEND_API_KEY || "ak_xtcpS8Eehujtu62wOgrhqg.jIY3zXjjEM9e2QSQmWAVBCsmO_TdTDM4Jt7P5nt4Ss8"
       }
     })
     
@@ -167,7 +167,7 @@ app.get('/api/item/:id/screening-export.csv', async (c) => {
   try {
     const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}/screening-export.csv`, {
       headers: {
-        'X-API-Key': c.env.BACKEND_API_KEY
+        'X-API-Key': c.env.BACKEND_API_KEY || "ak_xtcpS8Eehujtu62wOgrhqg.jIY3zXjjEM9e2QSQmWAVBCsmO_TdTDM4Jt7P5nt4Ss8"
       }
     })
     
@@ -191,7 +191,7 @@ app.get('/api/batch/:id/items', async (c) => {
   try {
     const response = await fetch(`${c.env.BACKEND_API_URL}/api/batch/${batchId}/items`, {
       headers: {
-        'X-API-Key': c.env.BACKEND_API_KEY
+        'X-API-Key': c.env.BACKEND_API_KEY || "ak_xtcpS8Eehujtu62wOgrhqg.jIY3zXjjEM9e2QSQmWAVBCsmO_TdTDM4Jt7P5nt4Ss8"
       }
     })
     
@@ -209,7 +209,7 @@ app.get('/api/debug/item/:id', async (c) => {
   try {
     const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}`, {
       headers: {
-        'X-API-Key': c.env.BACKEND_API_KEY
+        'X-API-Key': c.env.BACKEND_API_KEY || "ak_xtcpS8Eehujtu62wOgrhqg.jIY3zXjjEM9e2QSQmWAVBCsmO_TdTDM4Jt7P5nt4Ss8"
       }
     })
     
