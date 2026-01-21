@@ -49,7 +49,7 @@ app.get('/api/health', async (c) => {
   try {
     const response = await fetch(`${backendUrl}/health`, {
       headers: {
-        'X-API-Key': c.env.BACKEND_API_KEY || "ak_WO3A_PwuPE35H5okNqtMZw.3dik3xgX7mhVbnawe9fK43cs7gS8mz69kqfdBnrNwZk"
+        'X-API-Key': c.env.BACKEND_API_KEY || "ak_bqv06JGWIj2Z9mCJRM1B6A.Uy6YR9R5L5lQ1_D8X2xj0OdpUfs5gQK86-sfo7jknRc"
       }
     })
     const data = await response.json()
@@ -86,7 +86,7 @@ app.post('/api/batch/upload', async (c) => {
     const response = await fetch(`${c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"}/api/batch/upload`, {
       method: 'POST',
       headers: {
-        'X-API-Key': c.env.BACKEND_API_KEY || "ak_WO3A_PwuPE35H5okNqtMZw.3dik3xgX7mhVbnawe9fK43cs7gS8mz69kqfdBnrNwZk"
+        'X-API-Key': c.env.BACKEND_API_KEY || "ak_bqv06JGWIj2Z9mCJRM1B6A.Uy6YR9R5L5lQ1_D8X2xj0OdpUfs5gQK86-sfo7jknRc"
       },
       body: backendFormData
     })
@@ -105,7 +105,7 @@ app.get('/api/batch/:id/status', async (c) => {
   try {
     const response = await fetch(`${c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"}/api/batch/${batchId}/status`, {
       headers: {
-        'X-API-Key': c.env.BACKEND_API_KEY || "ak_WO3A_PwuPE35H5okNqtMZw.3dik3xgX7mhVbnawe9fK43cs7gS8mz69kqfdBnrNwZk"
+        'X-API-Key': c.env.BACKEND_API_KEY || "ak_bqv06JGWIj2Z9mCJRM1B6A.Uy6YR9R5L5lQ1_D8X2xj0OdpUfs5gQK86-sfo7jknRc"
       }
     })
     
@@ -131,7 +131,7 @@ app.get('/api/batches', async (c) => {
   try {
     const response = await fetch(`${c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"}/api/batches`, {
       headers: {
-        'X-API-Key': c.env.BACKEND_API_KEY || "ak_WO3A_PwuPE35H5okNqtMZw.3dik3xgX7mhVbnawe9fK43cs7gS8mz69kqfdBnrNwZk"
+        'X-API-Key': c.env.BACKEND_API_KEY || "ak_bqv06JGWIj2Z9mCJRM1B6A.Uy6YR9R5L5lQ1_D8X2xj0OdpUfs5gQK86-sfo7jknRc"
       }
     })
     
@@ -149,7 +149,7 @@ app.get('/api/item/:id', async (c) => {
   try {
     const response = await fetch(`${c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"}/api/item/${itemId}`, {
       headers: {
-        'X-API-Key': c.env.BACKEND_API_KEY || "ak_WO3A_PwuPE35H5okNqtMZw.3dik3xgX7mhVbnawe9fK43cs7gS8mz69kqfdBnrNwZk"
+        'X-API-Key': c.env.BACKEND_API_KEY || "ak_bqv06JGWIj2Z9mCJRM1B6A.Uy6YR9R5L5lQ1_D8X2xj0OdpUfs5gQK86-sfo7jknRc"
       }
     })
     
@@ -167,7 +167,7 @@ app.get('/api/item/:id/screening-export.csv', async (c) => {
   try {
     const response = await fetch(`${c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"}/api/item/${itemId}/screening-export.csv`, {
       headers: {
-        'X-API-Key': c.env.BACKEND_API_KEY || "ak_WO3A_PwuPE35H5okNqtMZw.3dik3xgX7mhVbnawe9fK43cs7gS8mz69kqfdBnrNwZk"
+        'X-API-Key': c.env.BACKEND_API_KEY || "ak_bqv06JGWIj2Z9mCJRM1B6A.Uy6YR9R5L5lQ1_D8X2xj0OdpUfs5gQK86-sfo7jknRc"
       }
     })
     
@@ -191,7 +191,7 @@ app.get('/api/batch/:id/items', async (c) => {
   try {
     const response = await fetch(`${c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"}/api/batch/${batchId}/items`, {
       headers: {
-        'X-API-Key': c.env.BACKEND_API_KEY || "ak_WO3A_PwuPE35H5okNqtMZw.3dik3xgX7mhVbnawe9fK43cs7gS8mz69kqfdBnrNwZk"
+        'X-API-Key': c.env.BACKEND_API_KEY || "ak_bqv06JGWIj2Z9mCJRM1B6A.Uy6YR9R5L5lQ1_D8X2xj0OdpUfs5gQK86-sfo7jknRc"
       }
     })
     
@@ -209,7 +209,7 @@ app.get('/api/debug/item/:id', async (c) => {
   try {
     const response = await fetch(`${c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"}/api/item/${itemId}`, {
       headers: {
-        'X-API-Key': c.env.BACKEND_API_KEY || "ak_WO3A_PwuPE35H5okNqtMZw.3dik3xgX7mhVbnawe9fK43cs7gS8mz69kqfdBnrNwZk"
+        'X-API-Key': c.env.BACKEND_API_KEY || "ak_bqv06JGWIj2Z9mCJRM1B6A.Uy6YR9R5L5lQ1_D8X2xj0OdpUfs5gQK86-sfo7jknRc"
       }
     })
     
