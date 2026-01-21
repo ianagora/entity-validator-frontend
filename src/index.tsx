@@ -49,7 +49,7 @@ app.get('/api/health', async (c) => {
   try {
     const response = await fetch(`${backendUrl}/health`, {
       headers: {
-        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
+        'X-API-Key': c.env.BACKEND_API_KEY
       }
     })
     const data = await response.json()
@@ -86,7 +86,7 @@ app.post('/api/batch/upload', async (c) => {
     const response = await fetch(`${c.env.BACKEND_API_URL}/api/batch/upload`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
+        'X-API-Key': c.env.BACKEND_API_KEY
       },
       body: backendFormData
     })
@@ -105,7 +105,7 @@ app.get('/api/batch/:id/status', async (c) => {
   try {
     const response = await fetch(`${c.env.BACKEND_API_URL}/api/batch/${batchId}/status`, {
       headers: {
-        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
+        'X-API-Key': c.env.BACKEND_API_KEY
       }
     })
     
@@ -131,7 +131,7 @@ app.get('/api/batches', async (c) => {
   try {
     const response = await fetch(`${c.env.BACKEND_API_URL}/api/batches`, {
       headers: {
-        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
+        'X-API-Key': c.env.BACKEND_API_KEY
       }
     })
     
@@ -149,7 +149,7 @@ app.get('/api/item/:id', async (c) => {
   try {
     const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}`, {
       headers: {
-        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
+        'X-API-Key': c.env.BACKEND_API_KEY
       }
     })
     
@@ -167,7 +167,7 @@ app.get('/api/item/:id/screening-export.csv', async (c) => {
   try {
     const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}/screening-export.csv`, {
       headers: {
-        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
+        'X-API-Key': c.env.BACKEND_API_KEY
       }
     })
     
@@ -191,7 +191,7 @@ app.get('/api/batch/:id/items', async (c) => {
   try {
     const response = await fetch(`${c.env.BACKEND_API_URL}/api/batch/${batchId}/items`, {
       headers: {
-        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
+        'X-API-Key': c.env.BACKEND_API_KEY
       }
     })
     
@@ -209,7 +209,7 @@ app.get('/api/debug/item/:id', async (c) => {
   try {
     const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}`, {
       headers: {
-        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
+        'X-API-Key': c.env.BACKEND_API_KEY
       }
     })
     
