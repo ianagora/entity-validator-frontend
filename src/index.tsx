@@ -620,6 +620,43 @@ app.get('/', (c) => {
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script>
+            // ========== AUTHENTICATION CHECK ==========
+            (function checkAuth() {
+                const token = localStorage.getItem('access_token');
+                const userEmail = localStorage.getItem('user_email');
+                
+                // Redirect to login if no token
+                if (!token) {
+                    window.location.href = '/login';
+                    return;
+                }
+                
+                // Show user info in header
+                if (userEmail) {
+                    const header = document.querySelector('.mb-8');
+                    if (header) {
+                        const userDiv = document.createElement('div');
+                        userDiv.className = 'flex items-center justify-between mb-4';
+                        userDiv.innerHTML = `
+                            <div class="flex items-center gap-4">
+                                <span class="text-gray-600"><i class="fas fa-user mr-2"></i>${userEmail}</span>
+                                <button onclick="logout()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition text-sm">
+                                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                                </button>
+                            </div>
+                        `;
+                        header.insertBefore(userDiv, header.firstChild);
+                    }
+                }
+            })();
+            
+            function logout() {
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('user_email');
+                window.location.href = '/login';
+            }
+            // ========== END AUTHENTICATION CHECK ==========
+
           // File input handling
           const fileInput = document.getElementById('file-input');
           const fileName = document.getElementById('file-name');
