@@ -44,13 +44,12 @@ function getStatusBadge(status: string): string {
 
 // Health check
 app.get('/api/health', async (c) => {
-  const backendUrl = c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"
-  const isDev = c.env.ENVIRONMENT !== 'production'
+  const backendUrl = c.env.BACKEND_API_URL
   
   try {
     const response = await fetch(`${backendUrl}/health`, {
       headers: {
-        'X-API-Key': c.env.BACKEND_API_KEY || "ak_bqv06JGWIj2Z9mCJRM1B6A.Uy6YR9R5L5lQ1_D8X2xj0OdpUfs5gQK86-sfo7jknRc"
+        'X-API-Key': c.env.BACKEND_API_KEY
       }
     })
     const data = await response.json()
@@ -58,42 +57,15 @@ app.get('/api/health', async (c) => {
     return c.json({
       frontend: 'ok',
       backend: data,
-      environment: isDev ? 'development' : 'production',
       timestamp: new Date().toISOString()
     })
   } catch (error) {
     return c.json({
       frontend: 'ok',
       backend: 'unreachable',
-      environment: isDev ? 'development' : 'production',
       error: String(error),
       timestamp: new Date().toISOString()
     }, 503)
-  }
-})
-
-// Clear database (DEV only)
-app.post('/api/admin/clear-database', async (c) => {
-  const token = c.req.header('Authorization')?.replace('Bearer ', '')
-  
-  if (!token) {
-    return c.json({ detail: 'Authentication required' }, 401)
-  }
-  
-  // Forward to backend
-  try {
-    const response = await fetch(`${c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"}/api/admin/clear-database`, {
-      method: 'POST',
-      headers: {
-        'X-API-Key': c.env.BACKEND_API_KEY || "ak_bqv06JGWIj2Z9mCJRM1B6A.Uy6YR9R5L5lQ1_D8X2xj0OdpUfs5gQK86-sfo7jknRc",
-        'Authorization': `Bearer ${token}`
-      }
-    })
-    
-    const data = await response.json()
-    return c.json(data, response.status)
-  } catch (error) {
-    return c.json({ error: 'Failed to clear database', details: String(error) }, 500)
   }
 })
 
@@ -111,10 +83,10 @@ app.post('/api/batch/upload', async (c) => {
   backendFormData.append('file', file)
   
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"}/api/batch/upload`, {
+    const response = await fetch(`${c.env.BACKEND_API_URL}/api/batch/upload`, {
       method: 'POST',
       headers: {
-        'X-API-Key': c.env.BACKEND_API_KEY || "ak_bqv06JGWIj2Z9mCJRM1B6A.Uy6YR9R5L5lQ1_D8X2xj0OdpUfs5gQK86-sfo7jknRc"
+        'X-API-Key': c.env.BACKEND_API_KEY
       },
       body: backendFormData
     })
@@ -131,9 +103,9 @@ app.get('/api/batch/:id/status', async (c) => {
   const batchId = c.req.param('id')
   
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"}/api/batch/${batchId}/status`, {
+    const response = await fetch(`${c.env.BACKEND_API_URL}/api/batch/${batchId}/status`, {
       headers: {
-        'X-API-Key': c.env.BACKEND_API_KEY || "ak_bqv06JGWIj2Z9mCJRM1B6A.Uy6YR9R5L5lQ1_D8X2xj0OdpUfs5gQK86-sfo7jknRc"
+        'X-API-Key': c.env.BACKEND_API_KEY
       }
     })
     
@@ -157,9 +129,9 @@ app.get('/api/version', (c) => {
 // Get all batches
 app.get('/api/batches', async (c) => {
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"}/api/batches`, {
+    const response = await fetch(`${c.env.BACKEND_API_URL}/api/batches`, {
       headers: {
-        'X-API-Key': c.env.BACKEND_API_KEY || "ak_bqv06JGWIj2Z9mCJRM1B6A.Uy6YR9R5L5lQ1_D8X2xj0OdpUfs5gQK86-sfo7jknRc"
+        'X-API-Key': c.env.BACKEND_API_KEY
       }
     })
     
@@ -175,9 +147,9 @@ app.get('/api/item/:id', async (c) => {
   const itemId = c.req.param('id')
   
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"}/api/item/${itemId}`, {
+    const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}`, {
       headers: {
-        'X-API-Key': c.env.BACKEND_API_KEY || "ak_bqv06JGWIj2Z9mCJRM1B6A.Uy6YR9R5L5lQ1_D8X2xj0OdpUfs5gQK86-sfo7jknRc"
+        'X-API-Key': c.env.BACKEND_API_KEY
       }
     })
     
@@ -193,9 +165,9 @@ app.get('/api/item/:id/screening-export.csv', async (c) => {
   const itemId = c.req.param('id')
   
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"}/api/item/${itemId}/screening-export.csv`, {
+    const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}/screening-export.csv`, {
       headers: {
-        'X-API-Key': c.env.BACKEND_API_KEY || "ak_bqv06JGWIj2Z9mCJRM1B6A.Uy6YR9R5L5lQ1_D8X2xj0OdpUfs5gQK86-sfo7jknRc"
+        'X-API-Key': c.env.BACKEND_API_KEY
       }
     })
     
@@ -217,9 +189,9 @@ app.get('/api/batch/:id/items', async (c) => {
   const batchId = c.req.param('id')
   
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"}/api/batch/${batchId}/items`, {
+    const response = await fetch(`${c.env.BACKEND_API_URL}/api/batch/${batchId}/items`, {
       headers: {
-        'X-API-Key': c.env.BACKEND_API_KEY || "ak_bqv06JGWIj2Z9mCJRM1B6A.Uy6YR9R5L5lQ1_D8X2xj0OdpUfs5gQK86-sfo7jknRc"
+        'X-API-Key': c.env.BACKEND_API_KEY
       }
     })
     
@@ -235,9 +207,9 @@ app.get('/api/debug/item/:id', async (c) => {
   const itemId = c.req.param('id')
   
   try {
-    const response = await fetch(`${c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"}/api/item/${itemId}`, {
+    const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}`, {
       headers: {
-        'X-API-Key': c.env.BACKEND_API_KEY || "ak_bqv06JGWIj2Z9mCJRM1B6A.Uy6YR9R5L5lQ1_D8X2xj0OdpUfs5gQK86-sfo7jknRc"
+        'X-API-Key': c.env.BACKEND_API_KEY
       }
     })
     
@@ -447,7 +419,7 @@ app.post('/api/auth/login', async (c) => {
     backendFormData.append('username', username as string)
     backendFormData.append('password', password as string)
     
-    const response = await fetch(`${c.env.BACKEND_API_URL || "https://entity-validator-backend-production-6962.up.railway.app"}/auth/login`, {
+    const response = await fetch(`${c.env.BACKEND_API_URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -606,46 +578,6 @@ app.get('/', (c) => {
                 </div>
             </div>
 
-            <!-- Admin Panel (DEV only) -->
-            <div id="admin-panel" class="card mb-8 hidden">
-                <h2 class="text-2xl font-bold text-gray-900 mb-4">
-                    <i class="fas fa-tools text-red-600 mr-2"></i>
-                    Admin Panel
-                    <span class="text-sm font-normal text-orange-600 ml-2">(Development Mode Only)</span>
-                </h2>
-                
-                <div class="bg-red-50 border-2 border-red-200 rounded-lg p-6">
-                    <div class="flex items-start mb-4">
-                        <i class="fas fa-exclamation-triangle text-red-600 text-2xl mr-3 mt-1"></i>
-                        <div>
-                            <h3 class="text-lg font-bold text-red-900 mb-2">Danger Zone</h3>
-                            <p class="text-red-800 text-sm mb-4">
-                                These actions are irreversible and will permanently delete all data from the database.
-                                This feature is only available in development environments.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <button 
-                        id="clear-db-btn" 
-                        onclick="confirmClearDatabase()" 
-                        class="bg-red-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                    >
-                        <i class="fas fa-trash-alt mr-2"></i>
-                        Clear Database
-                    </button>
-                </div>
-                
-                <div id="clear-db-status" class="mt-4 hidden">
-                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <p class="text-blue-800 font-medium">
-                            <i class="fas fa-info-circle mr-2"></i>
-                            <span id="clear-db-message">Processing...</span>
-                        </p>
-                    </div>
-                </div>
-            </div>
-
             <!-- Recent Batches -->
             <div class="card">
                 <h2 class="text-2xl font-bold text-gray-900 mb-4">
@@ -688,120 +620,6 @@ app.get('/', (c) => {
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script>
-            // ========== AUTHENTICATION CHECK ==========
-            (function checkAuth() {
-                const token = localStorage.getItem('access_token');
-                const userEmail = localStorage.getItem('user_email');
-                
-                // Redirect to login if no token
-                if (!token) {
-                    window.location.href = '/login';
-                    return;
-                }
-                
-                // Show user info in header
-                if (userEmail) {
-                    const header = document.querySelector('.mb-8');
-                    if (header) {
-                        const userDiv = document.createElement('div');
-                        userDiv.className = 'flex items-center justify-between mb-4';
-                        userDiv.innerHTML = '<div class="flex items-center gap-4"><span class="text-gray-600"><i class="fas fa-user mr-2"></i>' + userEmail + '</span><button onclick="logout()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition text-sm"><i class="fas fa-sign-out-alt mr-2"></i>Logout</button></div>';
-                        header.insertBefore(userDiv, header.firstChild);
-                    }
-                }
-            })();
-            
-            function logout() {
-                localStorage.removeItem('access_token');
-                localStorage.removeItem('user_email');
-                window.location.href = '/login';
-            }
-            
-            // Check environment and show admin panel in dev mode
-            async function checkEnvironment() {
-                try {
-                    const response = await axios.get('/api/health');
-                    const isDev = response.data.environment === 'development';
-                    
-                    if (isDev) {
-                        document.getElementById('admin-panel').classList.remove('hidden');
-                    }
-                } catch (error) {
-                    console.error('Failed to check environment:', error);
-                }
-            }
-            
-            // Call checkEnvironment on page load
-            checkEnvironment();
-            
-            // Clear Database functionality
-            async function confirmClearDatabase() {
-                const confirmed = confirm(
-                    '⚠️ WARNING: This will permanently delete ALL data from the database!\n\n' +
-                    'This includes:\n' +
-                    '• All batches\n' +
-                    '• All entity records\n' +
-                    '• All processing history\n\n' +
-                    'This action CANNOT be undone.\n\n' +
-                    'Type YES in the next prompt to continue.'
-                );
-                
-                if (!confirmed) return;
-                
-                const confirmation = prompt('Type YES to confirm database deletion:');
-                if (confirmation !== 'YES') {
-                    alert('Database clear cancelled.');
-                    return;
-                }
-                
-                await clearDatabase();
-            }
-            
-            async function clearDatabase() {
-                const clearDbBtn = document.getElementById('clear-db-btn');
-                const clearDbStatus = document.getElementById('clear-db-status');
-                const clearDbMessage = document.getElementById('clear-db-message');
-                
-                clearDbBtn.disabled = true;
-                clearDbStatus.classList.remove('hidden');
-                clearDbMessage.textContent = 'Clearing database...';
-                
-                try {
-                    const response = await axios.post('/api/admin/clear-database');
-                    
-                    if (response.data.success) {
-                        clearDbMessage.innerHTML = '✓ Database cleared successfully!<br>' +
-                            'Items deleted: ' + (response.data.items_deleted || 0) + '<br>' +
-                            'Batches deleted: ' + (response.data.batches_deleted || 0);
-                        
-                        // Refresh batches list after clearing
-                        setTimeout(() => {
-                            loadBatches();
-                            window.location.reload();
-                        }, 2000);
-                    } else {
-                        clearDbMessage.textContent = '✗ Failed to clear database: ' + (response.data.error || 'Unknown error');
-                        clearDbBtn.disabled = false;
-                    }
-                } catch (error) {
-                    const errorMsg = error.response?.data?.detail || error.response?.data?.error || error.message;
-                    clearDbMessage.textContent = '✗ Failed to clear database: ' + errorMsg;
-                    clearDbBtn.disabled = false;
-                    
-                    // If it's a 403 (production environment), show special message
-                    if (error.response?.status === 403) {
-                        clearDbMessage.textContent = '✗ This endpoint is only available in development environment';
-                    }
-                }
-            }
-            // ========== END AUTHENTICATION CHECK ==========
-
-                // Configure axios to include auth token in all requests
-                const token = localStorage.getItem('access_token');
-                if (token) {
-                    axios.defaults.headers.common['Authorization'] = 'Bearer ' + token;
-                }
-
           // File input handling
           const fileInput = document.getElementById('file-input');
           const fileName = document.getElementById('file-name');

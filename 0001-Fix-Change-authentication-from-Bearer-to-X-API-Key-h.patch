@@ -1,0 +1,96 @@
+From 4419e9827c73f9dc3e4b55d2998640c33f58f330 Mon Sep 17 00:00:00 2001
+From: genspark_dev <genspark_dev@genspark.ai>
+Date: Wed, 21 Jan 2026 16:24:20 +0000
+Subject: [PATCH] =?UTF-8?q?=F0=9F=94=A7=20Fix:=20Change=20authentication?=
+ =?UTF-8?q?=20from=20Bearer=20to=20X-API-Key=20header?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- Backend expects X-API-Key header for API authentication
+- Changed all API calls from 'Authorization: Bearer' to 'X-API-Key'
+- This should fix job processing issues on development environment
+- Affects all 8 API proxy endpoints (health, batch upload, status, items, etc.)
+---
+ src/index.tsx | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/src/index.tsx b/src/index.tsx
+index 9106a82..7010b37 100644
+--- a/src/index.tsx
++++ b/src/index.tsx
+@@ -49,7 +49,7 @@ app.get('/api/health', async (c) => {
+   try {
+     const response = await fetch(`${backendUrl}/health`, {
+       headers: {
+-        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
++        'X-API-Key': c.env.BACKEND_API_KEY
+       }
+     })
+     const data = await response.json()
+@@ -86,7 +86,7 @@ app.post('/api/batch/upload', async (c) => {
+     const response = await fetch(`${c.env.BACKEND_API_URL}/api/batch/upload`, {
+       method: 'POST',
+       headers: {
+-        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
++        'X-API-Key': c.env.BACKEND_API_KEY
+       },
+       body: backendFormData
+     })
+@@ -105,7 +105,7 @@ app.get('/api/batch/:id/status', async (c) => {
+   try {
+     const response = await fetch(`${c.env.BACKEND_API_URL}/api/batch/${batchId}/status`, {
+       headers: {
+-        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
++        'X-API-Key': c.env.BACKEND_API_KEY
+       }
+     })
+     
+@@ -131,7 +131,7 @@ app.get('/api/batches', async (c) => {
+   try {
+     const response = await fetch(`${c.env.BACKEND_API_URL}/api/batches`, {
+       headers: {
+-        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
++        'X-API-Key': c.env.BACKEND_API_KEY
+       }
+     })
+     
+@@ -149,7 +149,7 @@ app.get('/api/item/:id', async (c) => {
+   try {
+     const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}`, {
+       headers: {
+-        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
++        'X-API-Key': c.env.BACKEND_API_KEY
+       }
+     })
+     
+@@ -167,7 +167,7 @@ app.get('/api/item/:id/screening-export.csv', async (c) => {
+   try {
+     const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}/screening-export.csv`, {
+       headers: {
+-        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
++        'X-API-Key': c.env.BACKEND_API_KEY
+       }
+     })
+     
+@@ -191,7 +191,7 @@ app.get('/api/batch/:id/items', async (c) => {
+   try {
+     const response = await fetch(`${c.env.BACKEND_API_URL}/api/batch/${batchId}/items`, {
+       headers: {
+-        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
++        'X-API-Key': c.env.BACKEND_API_KEY
+       }
+     })
+     
+@@ -209,7 +209,7 @@ app.get('/api/debug/item/:id', async (c) => {
+   try {
+     const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}`, {
+       headers: {
+-        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
++        'X-API-Key': c.env.BACKEND_API_KEY
+       }
+     })
+     
+-- 
+2.47.3
+

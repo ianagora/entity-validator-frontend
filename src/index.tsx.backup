@@ -49,7 +49,7 @@ app.get('/api/health', async (c) => {
   try {
     const response = await fetch(`${backendUrl}/health`, {
       headers: {
-        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
+        'X-API-Key': c.env.BACKEND_API_KEY
       }
     })
     const data = await response.json()
@@ -86,7 +86,7 @@ app.post('/api/batch/upload', async (c) => {
     const response = await fetch(`${c.env.BACKEND_API_URL}/api/batch/upload`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
+        'X-API-Key': c.env.BACKEND_API_KEY
       },
       body: backendFormData
     })
@@ -105,7 +105,7 @@ app.get('/api/batch/:id/status', async (c) => {
   try {
     const response = await fetch(`${c.env.BACKEND_API_URL}/api/batch/${batchId}/status`, {
       headers: {
-        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
+        'X-API-Key': c.env.BACKEND_API_KEY
       }
     })
     
@@ -131,7 +131,7 @@ app.get('/api/batches', async (c) => {
   try {
     const response = await fetch(`${c.env.BACKEND_API_URL}/api/batches`, {
       headers: {
-        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
+        'X-API-Key': c.env.BACKEND_API_KEY
       }
     })
     
@@ -149,7 +149,7 @@ app.get('/api/item/:id', async (c) => {
   try {
     const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}`, {
       headers: {
-        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
+        'X-API-Key': c.env.BACKEND_API_KEY
       }
     })
     
@@ -167,7 +167,7 @@ app.get('/api/item/:id/screening-export.csv', async (c) => {
   try {
     const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}/screening-export.csv`, {
       headers: {
-        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
+        'X-API-Key': c.env.BACKEND_API_KEY
       }
     })
     
@@ -191,7 +191,7 @@ app.get('/api/batch/:id/items', async (c) => {
   try {
     const response = await fetch(`${c.env.BACKEND_API_URL}/api/batch/${batchId}/items`, {
       headers: {
-        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
+        'X-API-Key': c.env.BACKEND_API_KEY
       }
     })
     
@@ -209,7 +209,7 @@ app.get('/api/debug/item/:id', async (c) => {
   try {
     const response = await fetch(`${c.env.BACKEND_API_URL}/api/item/${itemId}`, {
       headers: {
-        'Authorization': `Bearer ${c.env.BACKEND_API_KEY}`
+        'X-API-Key': c.env.BACKEND_API_KEY
       }
     })
     
@@ -239,7 +239,7 @@ app.get('/', (c) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Entity Validator - Dashboard</title>
+        <title>BOCVerify - Dashboard</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
@@ -269,10 +269,10 @@ app.get('/', (c) => {
             <div class="mb-8">
                 <h1 class="text-4xl font-bold text-gray-900 mb-2">
                     <i class="fas fa-building text-blue-600 mr-3"></i>
-                    Entity Validation Platform
+                    BOCVerify
                 </h1>
                 <p class="text-gray-600 text-lg">
-                    UK Companies House & Charity Commission Entity Resolution & Enrichment
+                    Companies House entity beneficial ownership & control enrichment system
                 </p>
             </div>
 
@@ -561,7 +561,7 @@ app.get('/item/:id', async (c) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Entity Details - Entity Validator</title>
+        <title>Entity Details - BOCVerify</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
@@ -597,14 +597,29 @@ app.get('/item/:id', async (c) => {
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script>
-          console.log('[DEBUG] Page loaded, item ID: ${itemId}');
+          const itemId = ${JSON.stringify(itemId)};
+          console.log('[DEBUG] Page loaded, item ID:', itemId);
+          
+          // Store tree data globally for toggle
+          let globalOwnershipTree = null;
+          let globalItem = null;
+          
+          function toggleTreeView() {
+            const isInverted = document.getElementById('tree-view-toggle').checked;
+            console.log('[TOGGLE] Switching to ' + (isInverted ? 'UBO-down' : 'bottom-up') + ' view');
+            
+            if (globalOwnershipTree) {
+              buildRecursiveOwnershipTree(globalOwnershipTree, 0, isInverted);
+            }
+          }
           
           async function loadItemDetails() {
             try {
               console.log('[DEBUG] Fetching item data...');
-              const response = await axios.get('/api/item/${itemId}');
+              const response = await axios.get('/api/item/' + itemId);
               console.log('[DEBUG] Response status:', response.status);
               const item = response.data;
+              globalItem = item;  // Store globally
               console.log('[DEBUG] Item data received:', item ? 'yes' : 'no');
               
               document.getElementById('loading').classList.add('hidden');
@@ -613,7 +628,8 @@ app.get('/item/:id', async (c) => {
               // Build shareholders tree (use recursive tree if available, otherwise flat)
               let shareholderTree = '';
               if (item.ownership_tree && item.ownership_tree.shareholders && item.ownership_tree.shareholders.length > 0) {
-                shareholderTree = buildRecursiveOwnershipTree(item.ownership_tree);
+                globalOwnershipTree = item.ownership_tree;  // Store globally for toggle
+                shareholderTree = buildRecursiveOwnershipTree(item.ownership_tree, 0, false);
               } else if (item.shareholders && item.shareholders.length > 0) {
                 shareholderTree = buildOwnershipTree(item.shareholders, item.input_name);
               }
@@ -698,17 +714,25 @@ app.get('/item/:id', async (c) => {
                 \${item.shareholders && item.shareholders.length > 0 ? \`
                 <div class="card">
                   <h2 class="section-title"><i class="fas fa-sitemap mr-2"></i>Ownership Structure</h2>
-                  <p class="text-sm text-gray-600 mb-4">
-                    Extracted from Companies House filings (CS01/AR01/IN01) using Tesseract OCR
-                  </p>
-                  
                   <!-- Ownership Tree -->
                   <div class="mb-6">
                     <h3 class="text-lg font-semibold mb-3">
                       <i class="fas fa-project-diagram mr-2"></i>Ownership Tree
                       \${item.ownership_tree ? '<span class="badge badge-success ml-2">Multi-Layer</span>' : ''}
                     </h3>
-                    <div id="ownership-tree-container"></div>
+                    <!-- UBO-Down View toggle hidden temporarily
+                    <div class="mb-3 flex items-center gap-3">
+                      <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="tree-view-toggle" onchange="toggleTreeView()" class="w-4 h-4 text-blue-600 rounded">
+                        <span class="text-sm font-medium text-gray-700">
+                          <i class="fas fa-layer-group mr-1"></i>
+                          Show UBO-Down View
+                        </span>
+                      </label>
+                      <span class="text-xs text-gray-500">(Ultimate Beneficial Owners at top)</span>
+                    </div>
+                    -->
+                    <div id="ownership-tree-container" style="overflow: auto; max-width: 100%; max-height: 600px;"></div>
                     <div class="mt-4 flex gap-2">
                       <button onclick="zoomIn()" class="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">
                         <i class="fas fa-search-plus"></i> Zoom In
@@ -724,74 +748,6 @@ app.get('/item/:id', async (c) => {
                       </button>
                     </div>
                   </div>
-                  
-                  <!-- Ownership Chains (if available) -->
-                  \${item.ownership_chains && item.ownership_chains.length > 0 ? \`
-                  <div class="mb-6">
-                    <h3 class="text-lg font-semibold mb-3">
-                      <i class="fas fa-route mr-2"></i>Ultimate Ownership Chains
-                    </h3>
-                    <p class="text-sm text-gray-600 mb-3">
-                      These chains show the path from ultimate beneficial owners to the target company.
-                    </p>
-                    <div class="space-y-3">
-                      \${item.ownership_chains.map((chain, idx) => \`
-                        <div class="bg-gray-50 p-4 rounded-lg border-l-4 border-blue-500">
-                          <div class="font-semibold text-gray-900 mb-2">
-                            Chain #\${idx + 1}: \${chain.ultimate_owner} 
-                            <span class="text-sm font-normal text-gray-600">
-                              (\${chain.total_percentage.toFixed(2)}% - \${chain.chain_length} layers)
-                            </span>
-                          </div>
-                          <div class="text-sm text-gray-700 ml-4">
-                            \${chain.ownership_chain.map((owner, ownerIdx) => \`
-                              <div class="flex items-center gap-2 py-1">
-                                <span>\${owner.is_company ? '🏢' : '👤'}</span>
-                                <span class="font-medium">\${owner.name}</span>
-                                <span class="text-gray-500">(\${owner.percentage.toFixed(2)}%)</span>
-                                \${owner.company_number ? \`<span class="text-xs text-gray-400">[\${owner.company_number}]</span>\` : ''}
-                                \${ownerIdx < chain.ownership_chain.length - 1 ? '<i class="fas fa-arrow-down text-gray-400 ml-2"></i>' : ''}
-                              </div>
-                            \`).join('')}
-                          </div>
-                        </div>
-                      \`).join('')}
-                    </div>
-                  </div>
-                  \` : ''}
-                  
-                  <!-- Shareholder Table -->
-                  <div>
-                    <h3 class="text-lg font-semibold mb-3">Shareholder Details</h3>
-                    <div class="overflow-x-auto">
-                      <table class="w-full text-sm">
-                        <thead class="bg-gray-50">
-                          <tr>
-                            <th class="px-4 py-2 text-left">Name</th>
-                            <th class="px-4 py-2 text-left">Shares</th>
-                            <th class="px-4 py-2 text-left">Percentage</th>
-                            <th class="px-4 py-2 text-left">Class</th>
-                            <th class="px-4 py-2 text-left">Type</th>
-                          </tr>
-                        </thead>
-                        <tbody class="divide-y">
-                          \${item.shareholders.map(sh => \`
-                            <tr>
-                              <td class="px-4 py-2 font-medium">\${sh.name}</td>
-                              <td class="px-4 py-2">\${(sh.shares_held || 0).toLocaleString()}</td>
-                              <td class="px-4 py-2">\${sh.percentage || 0}%</td>
-                              <td class="px-4 py-2">\${sh.share_class || '-'}</td>
-                              <td class="px-4 py-2">
-                                \${isParentCompany(sh.name) ? 
-                                  '<span class="badge badge-warning">Parent Company</span>' : 
-                                  '<span class="badge badge-info">Individual</span>'}
-                              </td>
-                            </tr>
-                          \`).join('')}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
                 </div>
                 \` : item.enrich_status === 'done' ? \`
                 <div class="card">
@@ -800,306 +756,284 @@ app.get('/item/:id', async (c) => {
                 </div>
                 \` : ''}
 
-                <!-- Officers -->
-                \${item.officers && item.officers.items && item.officers.items.length > 0 ? \`
-                <div class="card">
-                  <h2 class="section-title"><i class="fas fa-users mr-2"></i>Officers (\${item.officers.items.length})</h2>
-                  <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                      <thead class="bg-gray-50">
-                        <tr>
-                          <th class="px-4 py-2 text-left">Name</th>
-                          <th class="px-4 py-2 text-left">Role</th>
-                          <th class="px-4 py-2 text-left">Appointed</th>
-                          <th class="px-4 py-2 text-left">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody class="divide-y">
-                        \${item.officers.items.slice(0, 10).map(officer => \`
-                          <tr>
-                            <td class="px-4 py-2">\${officer.name}</td>
-                            <td class="px-4 py-2">\${officer.officer_role || '-'}</td>
-                            <td class="px-4 py-2">\${officer.appointed_on || '-'}</td>
-                            <td class="px-4 py-2">
-                              <span class="badge \${officer.resigned_on ? 'badge-warning' : 'badge-success'}">
-                                \${officer.resigned_on ? 'Resigned' : 'Active'}
-                              </span>
-                            </td>
-                          </tr>
-                        \`).join('')}
-                      </tbody>
-                    </table>
-                  </div>
-                  \${item.officers.items.length > 10 ? \`<p class="text-sm text-gray-500 mt-2">Showing 10 of \${item.officers.items.length} officers</p>\` : ''}
-                </div>
-                \` : ''}
 
-                <!-- PSCs (Persons with Significant Control) -->
-                \${item.pscs && item.pscs.items && item.pscs.items.length > 0 ? \`
-                <div class="card">
-                  <h2 class="section-title"><i class="fas fa-user-shield mr-2"></i>Persons with Significant Control (\${item.pscs.items.length})</h2>
-                  <div class="space-y-3">
-                    \${item.pscs.items.map(psc => \`
-                      <div class="p-3 bg-gray-50 rounded">
-                        <p class="font-semibold">\${psc.name}</p>
-                        \${psc.natures_of_control ? \`
-                        <p class="text-sm text-gray-600 mt-1">
-                          <i class="fas fa-check-circle text-green-600 mr-1"></i>
-                          \${Array.isArray(psc.natures_of_control) ? psc.natures_of_control.join(', ') : psc.natures_of_control}
-                        </p>
-                        \` : ''}
-                        \${psc.notified_on ? \`<p class="text-xs text-gray-500 mt-1">Notified: \${psc.notified_on}</p>\` : ''}
-                      </div>
-                    \`).join('')}
-                  </div>
-                </div>
-                \` : ''}
 
                 <!-- KYC/AML Screening Requirements -->
                 <div class="card">
-                  <div class="flex justify-between items-start mb-4">
-                    <div>
-                      <h2 class="section-title mb-2">
-                        <i class="fas fa-search-dollar mr-2"></i>KYC/AML Screening Requirements
-                      </h2>
-                      <p class="text-sm text-gray-600">
-                        Comprehensive list of persons and entities requiring screening based on UK AML regulations.
-                      </p>
-                    </div>
-                    <div class="flex gap-2">
-                      <a href="/api/item/\${item.id}/screening-export.csv" 
-                         class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                         download>
-                        <i class="fas fa-download mr-2"></i>Download CSV
-                      </a>
-                      <button onclick="window.print()" 
-                              class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium">
-                        <i class="fas fa-print mr-2"></i>Print
-                      </button>
-                    </div>
-                  </div>
+                  ${ /* Download CSV and Print buttons hidden temporarily (showing too many parties) */ '' }
 
-                  <!-- Entity -->
-                  \${item.screening_list && item.screening_list.entity && item.screening_list.entity.length > 0 ? \`
+                  <!-- Consolidated Screening List -->
+                  \${(() => {
+                    // Normalize and consolidate all individuals and entities from the complete ownership structure
+                    const personMap = new Map(); // Use Map to track unique individuals by name
+                    
+                    // Advanced name normalization function
+                    const normalizeName = (name) => {
+                      if (!name) return '';
+                      
+                      // DEBUG for Kenning
+                      const isKenning = name.toUpperCase().includes('KENNING');
+                      if (isKenning) console.log('[NORMALIZE] Input:', name);
+                      
+                      // For companies, uppercase and normalize legal suffixes
+                      if (name.toUpperCase().includes('LIMITED') || 
+                          name.toUpperCase().includes('LTD') ||
+                          name.toUpperCase().includes('PLC') ||
+                          name.toUpperCase().includes('LLP')) {
+                        let normalized = name.trim().toUpperCase();
+                        if (isKenning) console.log('[NORMALIZE] After uppercase:', normalized);
+                        
+                        // Normalize legal suffixes: Use string methods to avoid regex issues in template literals
+                        normalized = normalized.split(' LIMITED').join(' LTD');
+                        normalized = normalized.endsWith(' LIMITED') ? normalized.slice(0, -8) + ' LTD' : normalized;
+                        normalized = normalized === 'LIMITED' ? 'LTD' : normalized;
+                        if (isKenning) console.log('[NORMALIZE] After LIMITED→LTD:', normalized);
+                        
+                        normalized = normalized.split('P.L.C').join('PLC');
+                        normalized = normalized.split('L.L.P').join('LLP');
+                        normalized = normalized.split(' COMPANY').join(' CO');
+                        
+                        // Remove punctuation - use character class that works in template literals
+                        // Keep only: A-Z, 0-9, and spaces
+                        normalized = normalized.split('').filter(c => {
+                          const code = c.charCodeAt(0);
+                          return (code >= 65 && code <= 90) || // A-Z
+                                 (code >= 48 && code <= 57) || // 0-9
+                                 code === 32; // space
+                        }).join('');
+                        if (isKenning) console.log('[NORMALIZE] After punctuation removal:', normalized);
+                        
+                        // Remove extra whitespace
+                        normalized = normalized.split(' ').filter(s => s.length > 0).join(' ');
+                        if (isKenning) console.log('[NORMALIZE] Final (company):', normalized);
+                        
+                        return normalized;
+                      }
+                      
+                      // For individuals: normalize name variations
+                      let normalized = name.trim().toUpperCase();
+                      
+                      // Remove titles (Mr, Mrs, Ms, Miss, Dr, etc.)
+                      normalized = normalized.replace(/^(MR|MRS|MS|MISS|DR|SIR|DAME|LORD|LADY|PROFESSOR|PROF)\\.?\\s+/i, '');
+                      
+                      // Handle "LASTNAME, Firstname" format -> "FIRSTNAME LASTNAME"
+                      if (normalized.includes(',')) {
+                        const parts = normalized.split(',').map(p => p.trim());
+                        if (parts.length === 2) {
+                          // Reverse: "KHAN, HAROON" -> "HAROON KHAN"
+                          normalized = parts[1] + ' ' + parts[0];
+                        }
+                      }
+                      
+                      // Remove extra whitespace
+                      normalized = normalized.replace(/\s+/g, ' ').trim();
+                      
+                      // Sort words alphabetically for better matching
+                      // This handles "HAROON KHAN" vs "KHAN HAROON"
+                      const words = normalized.split(' ').sort().join(' ');
+                      
+                      return words;
+                    };
+                    
+                    // Helper function to add or merge person data
+                    const addPerson = (name, data) => {
+                      const normalizedName = normalizeName(name);
+                      
+                      // DEBUG: Log every addPerson call for companies
+                      if (data.isCompany && name.toUpperCase().includes('KENNING')) {
+                        console.log('[ADD_PERSON DEBUG] Adding:', name, '→ Normalized:', normalizedName, 'Data:', data);
+                      }
+                      
+                      if (personMap.has(normalizedName)) {
+
+                        const existing = personMap.get(normalizedName);
+                        
+                        // Choose the "best" display name (prefer the one with nationality/DOB as it's more formal)
+                        if (data.nationality || data.dob) {
+                          // Use the name with more data
+                          if (!existing.nationality && !existing.dob) {
+                            existing.name = name.trim();
+                          }
+                        } else if (!existing.name.includes(',') && name.includes(',')) {
+                          // Prefer "LASTNAME, Firstname" format (more formal)
+                          existing.name = name.trim();
+                        }
+                        
+                        // Merge roles (avoid duplicates)
+                        if (data.role && !existing.roles.includes(data.role)) {
+                          existing.roles.push(data.role);
+                        }
+                        
+                        // Update other fields if not present (use first non-null value)
+                        existing.nationality = existing.nationality || data.nationality;
+                        existing.dob = existing.dob || data.dob;
+                        
+                        // Merge linked entities (avoid duplicates)
+                        if (data.linkedEntity && !existing.linkedEntities.includes(data.linkedEntity)) {
+                          existing.linkedEntities.push(data.linkedEntity);
+                        }
+                        
+                        existing.isCompany = existing.isCompany || data.isCompany;
+                        existing.companyNumber = existing.companyNumber || data.companyNumber;
+                      } else {
+                        personMap.set(normalizedName, {
+                          name: name.trim(),
+                          roles: data.role ? [data.role] : [],
+                          nationality: data.nationality || null,
+                          dob: data.dob || null,
+                          linkedEntities: data.linkedEntity ? [data.linkedEntity] : [],
+                          isCompany: data.isCompany || false,
+                          companyNumber: data.companyNumber || null
+                        });
+                      }
+                    };
+                    
+                    // Extract target company name and number for reference
+                    const targetCompanyName = item.input_name || item.profile?.company_name || 'Target Company';
+                    const targetCompanyNumber = item.company_number;
+                    
+                    // DEBUG: Log what screening_list contains
+                    console.log('[SCREENING DEBUG] screening_list keys:', Object.keys(item.screening_list || {}));
+                    console.log('[SCREENING DEBUG] ownership_chain length:', item.screening_list?.ownership_chain?.length || 0);
+                    console.log('[SCREENING DEBUG] entity length:', item.screening_list?.entity?.length || 0);
+                    
+                    // 1. Process ownership_chain
+                    // - Include ONLY companies (entities) from the ownership chain
+                    // - SKIP all individuals from ownership_chain (they'll come from governance_and_control)
+                    console.log('[SCREENING DEBUG] ownership_chain exists?', !!item.screening_list?.ownership_chain, 'length:', item.screening_list?.ownership_chain?.length);
+                    if (item.screening_list?.ownership_chain) {
+                      console.log('[SCREENING DEBUG] Processing', item.screening_list.ownership_chain.length, 'ownership_chain entries');
+                      item.screening_list.ownership_chain.forEach(entry => {
+                        console.log('[SCREENING DEBUG] ownership_chain entry:', entry.name, 'is_company:', entry.is_company, 'type:', typeof entry.is_company);
+                        if (entry.is_company) {
+                          // Add ALL corporate entities from the chain
+                          addPerson(entry.name, {
+                            role: entry.role,
+                            linkedEntity: targetCompanyName,
+                            isCompany: true,
+                            companyNumber: entry.company_number
+                          });
+                        }
+                        // Skip ALL individuals from ownership_chain
+                        // (they will be added from governance_and_control section instead)
+                      });
+                    }
+                    
+                    // 2. Process governance_and_control (directors, secretaries, PSCs from target company)
+                    if (item.screening_list?.governance_and_control) {
+                      item.screening_list.governance_and_control.forEach(person => {
+                        addPerson(person.name, {
+                          role: person.role,
+                          nationality: person.nationality,
+                          dob: person.dob,
+                          linkedEntity: targetCompanyName,
+                          isCompany: false
+                        });
+                      });
+                    }
+                    
+                    // 3. Process UBOs (ultimate beneficial owners)
+                    if (item.screening_list?.ubos) {
+                      item.screening_list.ubos.forEach(ubo => {
+                        addPerson(ubo.name, {
+                          role: ubo.role,
+                          linkedEntity: targetCompanyName,
+                          isCompany: false
+                        });
+                      });
+                    }
+                    
+                    // 4. Process trusts
+                    if (item.screening_list?.trusts) {
+                      item.screening_list.trusts.forEach(trust => {
+                        addPerson(trust.name, {
+                          role: trust.role,
+                          linkedEntity: targetCompanyName,
+                          isCompany: false
+                        });
+                      });
+                    }
+                    
+                    // 5. Process entities
+                    if (item.screening_list?.entity) {
+                      item.screening_list.entity.forEach(entity => {
+                        addPerson(entity.name, {
+                          role: entity.type,
+                          linkedEntity: 'N/A',
+                          isCompany: true,
+                          companyNumber: entity.company_number
+                        });
+                      });
+                    }
+                    
+                    // DEBUG: Check if Kenning is in the Map before converting to array
+                    console.log('[MAP DEBUG] personMap size:', personMap.size);
+                    console.log('[MAP DEBUG] personMap keys:', Array.from(personMap.keys()));
+                    const kenningInMap = Array.from(personMap.entries()).find(([key, val]) => key.includes('KENNING'));
+                    if (kenningInMap) {
+                      console.log('[MAP DEBUG] Found KENNING in map:', kenningInMap);
+                    } else {
+                      console.log('[MAP DEBUG] ❌ KENNING NOT in map!');
+                    }
+                    
+                    // Convert Map to sorted array
+                    const consolidatedList = Array.from(personMap.values()).sort((a, b) => {
+                      // Sort companies first, then individuals alphabetically
+                      if (a.isCompany !== b.isCompany) return a.isCompany ? -1 : 1;
+                      return a.name.localeCompare(b.name);
+                    });
+                    
+                    console.log('[SCREENING DEBUG] Final consolidated list - Total entries:', consolidatedList.length);
+                    console.log('[SCREENING DEBUG] Companies in list:', consolidatedList.filter(p => p.isCompany).map(p => p.name));
+                    console.log('[SCREENING DEBUG] Individuals in list:', consolidatedList.filter(p => !p.isCompany).map(p => p.name));
+                    
+                    // Get unique linked entities for filter
+                    const uniqueLinkedEntities = [...new Set(consolidatedList.flatMap(p => p.linkedEntities))].sort();
+                    
+                    return consolidatedList.length > 0 ? \`
                   <div class="mb-6">
                     <h3 class="text-lg font-semibold mb-3 flex items-center">
-                      <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2">🏢</span>
-                      Entity
+                      <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2">📋</span>
+                      Consolidated Screening List
                     </h3>
-                    <p class="text-sm text-gray-600 mb-3">The legal entity itself</p>
+                    <p class="text-sm text-gray-600 mb-3">
+                      Comprehensive list of persons and entities requiring screening based on UK AML regulations.
+                    </p>
+                    
                     <div class="overflow-x-auto">
-                      <table class="w-full text-sm border">
+                      <table id="screening-table" class="w-full text-sm border">
                         <thead class="bg-gray-50">
                           <tr>
                             <th class="px-4 py-2 text-left border">Name</th>
-                            <th class="px-4 py-2 text-left border">Type</th>
-                            <th class="px-4 py-2 text-left border">Company Number</th>
-                            <th class="px-4 py-2 text-left border">Status</th>
+                            <th class="px-4 py-2 text-left border">Role(s)</th>
+                            <th class="px-4 py-2 text-left border">Nationality</th>
+                            <th class="px-4 py-2 text-left border">DOB</th>
+                            <th class="px-4 py-2 text-left border">Linked Entity</th>
                           </tr>
                         </thead>
                         <tbody>
-                          \${item.screening_list.entity.map(entity => \`
-                            <tr class="hover:bg-gray-50">
-                              <td class="px-4 py-2 border font-medium">\${entity.name}</td>
-                              <td class="px-4 py-2 border">\${entity.type}</td>
-                              <td class="px-4 py-2 border">\${entity.company_number || '-'}</td>
-                              <td class="px-4 py-2 border">
-                                <span class="badge \${entity.status === 'active' ? 'badge-success' : 'badge-warning'}">
-                                  \${entity.status}
-                                </span>
-                              </td>
-                            </tr>
-                          \`).join('')}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                  \` : ''}
-
-                  <!-- Governance & Control -->
-                  \${item.screening_list.governance_and_control && item.screening_list.governance_and_control.length > 0 ? \`
-                  <div class="mb-6">
-                    <h3 class="text-lg font-semibold mb-3 flex items-center">
-                      <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded mr-2">👔</span>
-                      Governance & Control
-                    </h3>
-                    <p class="text-sm text-gray-600 mb-3">Directors, Company Secretary, PSCs</p>
-                    <div class="overflow-x-auto">
-                      <table class="w-full text-sm border">
-                        <thead class="bg-gray-50">
-                          <tr>
-                            <th class="px-4 py-2 text-left border">Name</th>
-                            <th class="px-4 py-2 text-left border">Role</th>
-                            <th class="px-4 py-2 text-left border">Category</th>
-                            <th class="px-4 py-2 text-left border">Appointed</th>
-                            <th class="px-4 py-2 text-left border">Details</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          \${item.screening_list.governance_and_control.map(person => \`
-                            <tr class="hover:bg-gray-50">
-                              <td class="px-4 py-2 border font-medium">\${person.name}</td>
-                              <td class="px-4 py-2 border">
-                                <span class="badge \${person.category === 'Directors' ? 'badge-info' : person.category === 'PSCs' ? 'badge-error' : 'badge-secondary'}">
-                                  \${person.role}
-                                </span>
-                              </td>
-                              <td class="px-4 py-2 border text-xs">\${person.category}</td>
-                              <td class="px-4 py-2 border text-xs">\${person.appointed_on || '-'}</td>
-                              <td class="px-4 py-2 border text-xs">
-                                \${person.nationality ? \`Nationality: \${person.nationality}<br>\` : ''}
-                                \${person.dob ? \`DOB: \${person.dob}\` : ''}
-                              </td>
-                            </tr>
-                          \`).join('')}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                  \` : ''}
-
-                  <!-- Ownership Chain -->
-                  \${item.screening_list.ownership_chain && item.screening_list.ownership_chain.length > 0 ? \`
-                  <div class="mb-6">
-                    <h3 class="text-lg font-semibold mb-3 flex items-center">
-                      <span class="bg-green-100 text-green-800 px-2 py-1 rounded mr-2">🔗</span>
-                      Ownership Chain
-                    </h3>
-                    <p class="text-sm text-gray-600 mb-3">Direct shareholders, parents, grandparents, ultimate parents (≥10%)</p>
-                    <div class="overflow-x-auto">
-                      <table class="w-full text-sm border">
-                        <thead class="bg-gray-50">
-                          <tr>
-                            <th class="px-4 py-2 text-left border">Name</th>
-                            <th class="px-4 py-2 text-left border">Role</th>
-                            <th class="px-4 py-2 text-left border">Shareholding</th>
-                            <th class="px-4 py-2 text-left border">Company Number</th>
-                            <th class="px-4 py-2 text-left border">Category</th>
-                            <th class="px-4 py-2 text-left border">Layer</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          \${item.screening_list.ownership_chain.map(owner => {
-                            const depthColors = {
-                              0: 'bg-green-50',
-                              1: 'bg-yellow-50',
-                              2: 'bg-orange-50'
-                            };
-                            const depthColor = depthColors[owner.depth] || 'bg-red-50';
-                            return \`
-                            <tr class="hover:bg-gray-50 \${depthColor}">
+                          \${consolidatedList.map((person, idx) => \`
+                            <tr class="screening-row hover:bg-gray-50 \${person.isCompany ? 'bg-blue-50' : ''}" data-linked-entities="\${person.linkedEntities.join('||')}" data-index="\${idx}">
                               <td class="px-4 py-2 border font-medium">
-                                \${owner.is_company ? '🏢' : '👤'} \${owner.name}
+                                \${person.isCompany ? '🏢' : '👤'} \${person.name}
+                                \${person.companyNumber ? \`<br><span class="text-xs text-gray-500">\${person.companyNumber}</span>\` : ''}
                               </td>
-                              <td class="px-4 py-2 border">\${owner.role}</td>
-                              <td class="px-4 py-2 border font-semibold text-green-700">\${owner.shareholding}</td>
-                              <td class="px-4 py-2 border text-xs">\${owner.company_number || '-'}</td>
-                              <td class="px-4 py-2 border text-xs">\${owner.category}</td>
-                              <td class="px-4 py-2 border text-center">
-                                <span class="badge">\${owner.depth}</span>
-                              </td>
-                            </tr>
-                            \`;
-                          }).join('')}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                  \` : ''}
-
-                  <!-- UBOs -->
-                  \${item.screening_list.ubos && item.screening_list.ubos.length > 0 ? \`
-                  <div class="mb-6">
-                    <h3 class="text-lg font-semibold mb-3 flex items-center">
-                      <span class="bg-red-100 text-red-800 px-2 py-1 rounded mr-2">⭐</span>
-                      Ultimate Beneficial Owners (UBOs)
-                    </h3>
-                    <p class="text-sm text-gray-600 mb-3">Individuals with ≥10% indirect ownership or control</p>
-                    <div class="overflow-x-auto">
-                      <table class="w-full text-sm border">
-                        <thead class="bg-red-50">
-                          <tr>
-                            <th class="px-4 py-2 text-left border">Name</th>
-                            <th class="px-4 py-2 text-left border">Role</th>
-                            <th class="px-4 py-2 text-left border">Shareholding</th>
-                            <th class="px-4 py-2 text-left border">Shares Held</th>
-                            <th class="px-4 py-2 text-left border">Type</th>
-                            <th class="px-4 py-2 text-left border">Layer</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          \${item.screening_list.ubos.map(ubo => \`
-                            <tr class="hover:bg-red-50 bg-yellow-50">
-                              <td class="px-4 py-2 border font-bold">👤 \${ubo.name}</td>
-                              <td class="px-4 py-2 border">\${ubo.role}</td>
-                              <td class="px-4 py-2 border font-semibold text-red-700">\${ubo.shareholding}</td>
-                              <td class="px-4 py-2 border">\${ubo.shares_held ? ubo.shares_held.toLocaleString() : '-'}</td>
-                              <td class="px-4 py-2 border text-xs">
-                                \${ubo.indirect_ownership ? '<span class="badge badge-warning">Indirect</span>' : '<span class="badge badge-info">Control</span>'}
-                              </td>
-                              <td class="px-4 py-2 border text-center">
-                                <span class="badge">\${ubo.depth || 0}</span>
-                              </td>
-                            </tr>
-                          \`).join('')}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                  \` : ''}
-
-                  <!-- Trusts -->
-                  \${item.screening_list.trusts && item.screening_list.trusts.length > 0 ? \`
-                  <div class="mb-6">
-                    <h3 class="text-lg font-semibold mb-3 flex items-center">
-                      <span class="bg-indigo-100 text-indigo-800 px-2 py-1 rounded mr-2">📋</span>
-                      Trusts
-                    </h3>
-                    <p class="text-sm text-gray-600 mb-3">Settlors, Trustees, Protectors, Beneficiaries</p>
-                    <div class="overflow-x-auto">
-                      <table class="w-full text-sm border">
-                        <thead class="bg-gray-50">
-                          <tr>
-                            <th class="px-4 py-2 text-left border">Name</th>
-                            <th class="px-4 py-2 text-left border">Role</th>
-                            <th class="px-4 py-2 text-left border">Shareholding</th>
-                            <th class="px-4 py-2 text-left border">Category</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          \${item.screening_list.trusts.map(trust => \`
-                            <tr class="hover:bg-gray-50 bg-purple-50">
-                              <td class="px-4 py-2 border font-medium">\${trust.name}</td>
                               <td class="px-4 py-2 border">
-                                <span class="badge badge-secondary">\${trust.role}</span>
+                                \${person.roles.map(role => \`<span class="badge badge-info mr-1 mb-1">\${role}</span>\`).join('')}
                               </td>
-                              <td class="px-4 py-2 border">\${trust.shareholding || '-'}</td>
-                              <td class="px-4 py-2 border text-xs">\${trust.category}</td>
+                              <td class="px-4 py-2 border text-xs">\${person.nationality || '-'}</td>
+                              <td class="px-4 py-2 border text-xs">\${person.dob || '-'}</td>
+                              <td class="px-4 py-2 border text-xs">\${person.linkedEntities.join(', ') || '-'}</td>
                             </tr>
                           \`).join('')}
                         </tbody>
                       </table>
                     </div>
                   </div>
-                  \` : ''}
+                    \` : '<p class="text-gray-600">No screening data available.</p>';
+                  })()}
 
-                  <!-- Notes Section -->
-                  <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-                    <h4 class="font-semibold text-blue-900 mb-2">
-                      <i class="fas fa-info-circle mr-2"></i>Additional Information Required
-                    </h4>
-                    <ul class="text-sm text-blue-800 space-y-1">
-                      <li><strong>• Associated Persons:</strong> Authorized signatories, introducers/brokers, SMF holders - collect via client questionnaire</li>
-                      <li><strong>• Guarantee Company Members:</strong> Not available in public registers - requires company records</li>
-                      <li><strong>• Subsidiaries:</strong> Controlled subsidiaries and joint ventures - requires additional verification</li>
-                      <li><strong>• Trust Beneficiaries:</strong> Full beneficiary details may not be publicly disclosed</li>
-                    </ul>
-                  </div>
 
-                  <div class="mt-4 p-3 bg-gray-50 rounded text-xs text-gray-600">
-                    <p><strong>Data Sources:</strong> Companies House API, PSC Register, Ownership Tree Analysis</p>
-                    <p class="mt-1"><strong>Note:</strong> This screening list is based on public register data. Some information may require manual collection via client questionnaires or additional documentation.</p>
-                  </div>
                 </div>
               \`;
               
@@ -1117,73 +1051,631 @@ app.get('/item/:id', async (c) => {
             }
           }
           
-          function buildRecursiveOwnershipTree(tree, depth = 0, prefix = '', isLast = true) {
-            if (!tree) return 'No ownership data available';
+          // Screening Table Filter Functions
+          function filterScreeningTable() {
+            const filterValue = document.getElementById('linked-entity-filter').value;
+            const rows = document.querySelectorAll('.screening-row');
+            let visibleCount = 0;
             
-            // Color coding by depth
-            const depthColors = {
-              0: '#1e40af', // blue-800 (root)
-              1: '#3b82f6', // blue-500
-              2: '#059669', // green-600
-              3: '#10b981', // green-500
-              4: '#f59e0b', // yellow-500
-              5: '#f97316', // orange-500
-              6: '#ef4444', // red-500
-              7: '#dc2626', // red-600
-              8: '#991b1b'  // red-800 (very deep)
-            };
-            const color = depthColors[Math.min(depth, 8)] || '#6b7280';
-            
-            let result = '';
-            const indent = '  '.repeat(depth);
-            
-            // Root company
-            if (depth === 0) {
-              result += \`<span style="color: \${color}; font-weight: bold;">🏢 \${tree.company_name} (\${tree.company_number})</span>\\n\`;
-              result += '<span style="color: #9ca3af;">│</span>\\n';
-            }
-            
-            const shareholders = tree.shareholders || [];
-            if (shareholders.length === 0) {
-              return result + indent + '<span style="color: #9ca3af;">└── No shareholders found</span>\\n';
-            }
-            
-            shareholders.forEach((sh, idx) => {
-              const isLastSh = idx === shareholders.length - 1;
-              const connector = isLastSh ? '└── ' : '├── ';
-              const childPrefix = prefix + (isLast ? '    ' : '│   ');
+            rows.forEach(row => {
+              const linkedEntities = row.getAttribute('data-linked-entities').split('||');
               
-              const percentage = (sh.percentage || 0).toFixed(2);
-              const shares = (sh.shares_held || 0).toLocaleString();
-              const icon = sh.is_company ? '🏢' : '👤';
-              
-              // Color the connector and tree lines
-              const styledPrefix = prefix.replace(/│/g, '<span style="color: #9ca3af;">│</span>');
-              const styledConnector = \`<span style="color: #9ca3af;">\${connector}</span>\`;
-              
-              result += styledPrefix + styledConnector + \`<span style="color: \${color}; font-weight: 500;">\${icon} \${sh.name}</span>\`;
-              result += \` <span style="color: #6b7280;">(\${percentage}% - \${shares} shares)</span>\`;
-              
-              // Show company number if available
-              if (sh.company_number) {
-                result += \` <span style="color: #9ca3af; font-size: 0.9em;">[</span><span style="color: #3b82f6;">\${sh.company_number}</span><span style="color: #9ca3af; font-size: 0.9em;">]</span>\`;
-              }
-              
-              result += '\\n';
-              
-              // Recursively show children
-              if (sh.children && sh.children.length > 0) {
-                const childTree = { shareholders: sh.children, company_name: sh.name };
-                const childLines = buildRecursiveOwnershipTree(childTree, depth + 1, childPrefix, isLastSh);
-                result += childLines;
-              } else if (sh.is_company && sh.search_failed) {
-                result += childPrefix + '    ⚠️  [Company not found in Companies House]\\n';
-              } else if (sh.is_company && !sh.child_company) {
-                result += childPrefix + '    📋 [Corporate shareholder - details not extracted]\\n';
+              if (!filterValue) {
+                // Show all rows
+                row.style.display = '';
+                visibleCount++;
+              } else {
+                // Show only rows that have the selected linked entity
+                if (linkedEntities.includes(filterValue)) {
+                  row.style.display = '';
+                  visibleCount++;
+                } else {
+                  row.style.display = 'none';
+                }
               }
             });
             
-            return result;
+            // Update visible count
+            const visibleCountElement = document.getElementById('screening-visible');
+            if (visibleCountElement) {
+              visibleCountElement.textContent = visibleCount;
+            }
+          }
+          
+          function clearScreeningFilter() {
+            const filterSelect = document.getElementById('linked-entity-filter');
+            if (filterSelect) {
+              filterSelect.value = '';
+              filterScreeningTable();
+            }
+          }
+          
+          // SVG Tree Visualization Functions
+          let currentZoom = 1;
+          const minZoom = 0.5;
+          const maxZoom = 3;
+          const zoomStep = 0.2;
+          
+          function zoomIn() {
+            currentZoom = Math.min(currentZoom + zoomStep, maxZoom);
+            updateTreeZoom();
+          }
+          
+          function zoomOut() {
+            currentZoom = Math.max(currentZoom - zoomStep, minZoom);
+            updateTreeZoom();
+          }
+          
+          function resetZoom() {
+            currentZoom = 1;
+            updateTreeZoom();
+          }
+          
+          function updateTreeZoom() {
+            const svg = document.querySelector('#ownership-tree-container svg');
+            if (svg) {
+              const g = svg.querySelector('g');
+              if (g) {
+                g.setAttribute('transform', 'scale(' + currentZoom + ')');
+              }
+            }
+          }
+          
+          function downloadTreeSVG() {
+            const svg = document.querySelector('#ownership-tree-container svg');
+            if (!svg) {
+              alert('Please wait for the ownership tree to load before downloading.');
+              return;
+            }
+            
+            try {
+              // Clone the SVG to avoid modifying the original
+              const svgClone = svg.cloneNode(true);
+              
+              // Add XML declaration and namespace
+              const xmlDeclaration = String.fromCharCode(60, 63) + 'xml version="1.0" encoding="UTF-8"' + String.fromCharCode(63, 62) + '\\n';
+              const svgData = xmlDeclaration + new XMLSerializer().serializeToString(svgClone);
+              
+              const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = 'ownership-structure-' + itemId + '.svg';
+              link.style.display = 'none';
+              document.body.appendChild(link);
+              
+              // Force click with a slight delay
+              setTimeout(() => {
+                link.click();
+                setTimeout(() => {
+                  document.body.removeChild(link);
+                  URL.revokeObjectURL(url);
+                }, 100);
+              }, 100);
+              
+              console.log('SVG download initiated');
+            } catch (error) {
+              console.error('SVG download failed:', error);
+              alert('Failed to download SVG: ' + error.message);
+            }
+          }
+          
+          // Invert ownership tree to show UBOs at top, target company at bottom
+          function invertOwnershipTree(tree) {
+            if (!tree) return null;
+            
+            console.log('[INVERT] ========================================');
+            console.log('[INVERT] Starting tree inversion (UBO-down view)...');
+            console.log('[INVERT] ========================================');
+            
+            const targetCompany = {
+              name: tree.company_name || tree.name,
+              company_number: tree.company_number,
+              is_company: true,
+              depth: 0  // Will be recalculated
+            };
+            
+            // Find all UBOs (leaf nodes with no children/shareholders)
+            const ubos = [];
+            const ownershipPaths = [];  // Track paths from UBO to target
+            
+            function findUBOs(node, path = [], cumulativePercentage = 100) {
+              const currentPath = [...path, {
+                name: node.company_name || node.name,
+                company_number: node.company_number,
+                percentage: node.percentage || 100,
+                is_company: node.is_company !== false,
+                shares_held: node.shares_held
+              }];
+              
+              const shareholders = node.shareholders || [];
+              const children = node.children || [];
+              const allChildren = [...shareholders, ...children];
+              
+              if (allChildren.length === 0) {
+                // This is a UBO (leaf node)
+                const effectivePercentage = cumulativePercentage;
+                console.log('[INVERT] Found UBO: ' + currentPath[currentPath.length - 1].name + ' (' + effectivePercentage.toFixed(2) + '% effective)');
+                
+                ubos.push({
+                  name: currentPath[currentPath.length - 1].name,
+                  company_number: currentPath[currentPath.length - 1].company_number,
+                  is_company: currentPath[currentPath.length - 1].is_company,
+                  effective_percentage: effectivePercentage,
+                  path: currentPath
+                });
+                
+                ownershipPaths.push({
+                  ubo: currentPath[currentPath.length - 1].name,
+                  path: currentPath,
+                  effective_percentage: effectivePercentage
+                });
+              } else {
+                // Recurse into children
+                allChildren.forEach(child => {
+                  const childPercentage = child.percentage || 0;
+                  const newCumulative = (cumulativePercentage * childPercentage) / 100;
+                  findUBOs(child, currentPath, newCumulative);
+                });
+              }
+            }
+            
+            // Start from root (target company)
+            findUBOs(tree, [], 100);
+            
+            console.log('[INVERT] Found ' + ubos.length + ' UBOs');
+            console.log('[INVERT] Building inverted tree structure...');
+            
+            // Build inverted tree: each UBO becomes a root
+            const invertedTrees = ubos.map(ubo => {
+              // Reverse the path (UBO at top, target at bottom)
+              const reversedPath = [...ubo.path].reverse();
+              
+              // Build tree structure
+              let currentNode = null;
+              reversedPath.forEach((pathNode, idx) => {
+                const node = {
+                  name: pathNode.name,
+                  company_name: pathNode.name,
+                  company_number: pathNode.company_number,
+                  is_company: pathNode.is_company,
+                  percentage: pathNode.percentage,
+                  shares_held: pathNode.shares_held,
+                  depth: idx,
+                  shareholders: [],
+                  children: []
+                };
+                
+                // Add effective percentage to UBO node
+                if (idx === 0) {
+                  node.effective_percentage = ubo.effective_percentage;
+                  node.percentage = ubo.effective_percentage;
+                }
+                
+                if (currentNode) {
+                  currentNode.children.push(node);
+                }
+                
+                if (idx === 0) {
+                  // This is the UBO (root of this tree)
+                  currentNode = node;
+                } else {
+                  currentNode = node;
+                }
+              });
+              
+              // Return the root (UBO)
+              return reversedPath[0] ? {
+                name: reversedPath[0].name,
+                company_name: reversedPath[0].name,
+                company_number: reversedPath[0].company_number,
+                is_company: reversedPath[0].is_company,
+                percentage: ubo.effective_percentage,
+                effective_percentage: ubo.effective_percentage,
+                shares_held: reversedPath[0].shares_held,
+                depth: 0,
+                children: reversedPath.length > 1 ? [{
+                  name: reversedPath[1].name,
+                  company_name: reversedPath[1].name,
+                  company_number: reversedPath[1].company_number,
+                  is_company: reversedPath[1].is_company,
+                  percentage: reversedPath[1].percentage,
+                  shares_held: reversedPath[1].shares_held,
+                  depth: 1,
+                  children: buildChildChain(reversedPath.slice(2), 2)
+                }] : [],
+                shareholders: []
+              } : null;
+            }).filter(t => t !== null);
+            
+            function buildChildChain(pathNodes, startDepth) {
+              if (pathNodes.length === 0) return [];
+              
+              const firstNode = pathNodes[0];
+              return [{
+                name: firstNode.name,
+                company_name: firstNode.name,
+                company_number: firstNode.company_number,
+                is_company: firstNode.is_company,
+                percentage: firstNode.percentage,
+                shares_held: firstNode.shares_held,
+                depth: startDepth,
+                children: buildChildChain(pathNodes.slice(1), startDepth + 1),
+                shareholders: []
+              }];
+            }
+            
+            console.log('[INVERT] Built ' + invertedTrees.length + ' inverted trees');
+            
+            // Return a structure that can be rendered
+            // For now, we'll create a "virtual root" that contains all UBO trees
+            return {
+              name: 'Ultimate Beneficial Owners',
+              company_name: 'Ultimate Beneficial Owners',
+              is_company: false,
+              percentage: 100,
+              depth: -1,  // Virtual root
+              children: invertedTrees,
+              shareholders: []
+            };
+          }
+
+          function buildRecursiveOwnershipTree(tree, depth = 0, inverted = false) {
+            if (!tree) return 'No ownership data available';
+            
+            // Apply inversion if requested
+            const workingTree = inverted ? invertOwnershipTree(tree) : tree;
+            
+            // Calculate tree structure and positions
+            const nodes = [];
+            const links = [];
+            
+            // Track ALL seen nodes to prevent duplicates (companies AND individuals)
+            const seenCompanies = new Set();
+            
+            console.log('[TREE] ========================================');
+            console.log('[TREE] Starting tree traversal...');
+            console.log('[TREE] ========================================');
+            
+            // Calculate subtree width recursively with maximum width constraint
+            function getSubtreeWidth(node) {
+              const shareholders = node.shareholders || [];
+              const children = node.children || [];
+              const allChildren = [...shareholders, ...children];
+              
+              if (allChildren.length === 0) {
+                return 250; // Leaf node width
+              }
+              
+              // For many children (>6), use compact layout (200px per child instead of recursive)
+              if (allChildren.length > 6) {
+                return allChildren.length * 200; // Compact spacing
+              }
+              
+              // Sum of all children's widths
+              let totalWidth = 0;
+              allChildren.forEach(child => {
+                totalWidth += getSubtreeWidth(child);
+              });
+              
+              return Math.max(250, totalWidth); // At least 250px wide
+            }
+            
+            function traverseTree(node, depth, x, y, parentId, effectivePercentage) {
+              const nodeId = 'node-' + nodes.length;
+              const isCompany = node.is_company !== false;
+              const companyNumber = node.company_number;
+              const nodeName = node.company_name || node.name;
+              
+              // Skip virtual root in inverted mode
+              if (depth === -1 && nodeName === 'Ultimate Beneficial Owners') {
+                console.log('[TREE] Skipping virtual root, processing UBO children...');
+                const children = node.children || [];
+                const childY = y + 150;
+                
+                // Calculate spacing for UBOs
+                const childWidths = children.map(child => getSubtreeWidth(child));
+                const totalWidth = childWidths.reduce((a, b) => a + b, 0);
+                let currentX = x - totalWidth / 2;
+                
+                children.forEach((sh, idx) => {
+                  const childWidth = childWidths[idx];
+                  const childX = currentX + childWidth / 2;
+                  traverseTree(sh, 0, childX, childY, null, 100);
+                  currentX += childWidth;
+                });
+                return;
+              }
+              
+              // Create unique identifier for ALL nodes (prevents duplicate rendering)
+              // - Companies: use company number
+              // - Individuals: use name + position to ensure uniqueness
+              const nodeKey = companyNumber || (nodeName + '-' + x + '-' + y);
+              
+              // DEBUG: Log each node being processed
+              console.log('[TREE] Depth ' + depth + ': Processing "' + nodeName + '" (' + (companyNumber || 'individual') + ') at (' + x + ',' + y + ') - Parent: ' + (parentId || 'ROOT'));
+              
+              // Check if this node has already been processed (prevents duplicates)
+              if (seenCompanies.has(nodeKey)) {
+                console.log('[TREE] ⚠️ Skipping duplicate node: ' + nodeName + ' (' + nodeKey + ')');
+                return;
+              }
+              
+              // Track this node as processed
+              seenCompanies.add(nodeKey);
+              
+              // Use effective percentage if available (for UBOs in inverted tree)
+              const displayPercentage = node.effective_percentage || node.percentage || (depth === 0 ? 100 : 0);
+              
+              nodes.push({
+                id: nodeId,
+                name: nodeName,
+                companyNumber: companyNumber,
+                percentage: displayPercentage,
+                percentageBand: node.percentage_band || '',
+                shares: node.shares_held || 0,
+                isCompany: isCompany,
+                depth: depth,
+                x: x,
+                y: y,
+                country: node.country || ''
+              });
+              
+              if (parentId) {
+                links.push({ source: parentId, target: nodeId });
+              }
+              
+              // Process both shareholders and children arrays
+              const shareholders = node.shareholders || [];
+              const children = node.children || [];
+              const allChildren = [...shareholders, ...children];
+              
+              // DEBUG: Log children being processed
+              if (allChildren.length > 0) {
+                console.log('[TREE]   └─ ' + nodeName + ' has ' + allChildren.length + ' children:', allChildren.map(c => c.company_name || c.name));
+              }
+              
+              if (allChildren.length > 0) {
+                const childY = y + 150;
+                
+                // Calculate each child's width and position them with proper spacing
+                let currentX = x;
+                const childWidths = allChildren.map(child => getSubtreeWidth(child));
+                const totalWidth = childWidths.reduce((a, b) => a + b, 0);
+                currentX = x - totalWidth / 2;
+                
+                allChildren.forEach((sh, idx) => {
+                  const childWidth = childWidths[idx];
+                  const childX = currentX + childWidth / 2;
+                  const childEffective = sh.effective_percentage || ((effectivePercentage * (sh.percentage || 100)) / 100);
+                  traverseTree(sh, depth + 1, childX, childY, nodeId, childEffective);
+                  currentX += childWidth;
+                });
+              }
+            }
+            
+            // Calculate total tree width and start from center
+            const treeWidth = getSubtreeWidth(workingTree);
+            const startX = treeWidth / 2;
+            console.log('[TREE] Total tree width: ' + treeWidth + 'px, starting at X=' + startX);
+            
+            // Start traversal with depth -1 for virtual root in inverted mode
+            const startDepth = (inverted && workingTree.depth === -1) ? -1 : 0;
+            traverseTree(workingTree, startDepth, startX, 50, null, 100);
+            
+            // Generate SVG and inject into container
+            const svg = createOwnershipSVG(nodes, links);
+            setTimeout(() => {
+              const container = document.getElementById('ownership-tree-container');
+              if (container) {
+                container.innerHTML = svg;
+              }
+            }, 100);
+            
+            return ''; // Return empty string as we're injecting directly
+          }
+          
+          // Map country names to flag emojis
+          function getCountryFlag(country) {
+            if (!country || typeof country !== 'string') return '';
+            const countryUpper = country.toUpperCase().trim();
+            const flagMap = {
+              'ENGLAND': '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+              'SCOTLAND': '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+              'WALES': '🏴󠁧󠁢󠁷󠁬󠁳󠁿',
+              'NORTHERN IRELAND': '🇬🇧',
+              'UNITED KINGDOM': '🇬🇧',
+              'UK': '🇬🇧',
+              'EUROPEAN UNION': '🇪🇺',
+              'EU': '🇪🇺',
+              'GERMANY': '🇩🇪',
+              'FRANCE': '🇫🇷',
+              'SPAIN': '🇪🇸',
+              'ITALY': '🇮🇹',
+              'NETHERLANDS': '🇳🇱',
+              'BELGIUM': '🇧🇪',
+              'IRELAND': '🇮🇪',
+              'LUXEMBOURG': '🇱🇺',
+              'SWITZERLAND': '🇨🇭',
+              'AUSTRIA': '🇦🇹',
+              'DENMARK': '🇩🇰',
+              'SWEDEN': '🇸🇪',
+              'NORWAY': '🇳🇴',
+              'FINLAND': '🇫🇮',
+              'POLAND': '🇵🇱',
+              'CZECH REPUBLIC': '🇨🇿',
+              'PORTUGAL': '🇵🇹',
+              'GREECE': '🇬🇷',
+              'USA': '🇺🇸',
+              'UNITED STATES': '🇺🇸',
+              'CANADA': '🇨🇦',
+              'AUSTRALIA': '🇦🇺',
+              'NEW ZEALAND': '🇳🇿',
+              'JAPAN': '🇯🇵',
+              'CHINA': '🇨🇳',
+              'INDIA': '🇮🇳',
+              'SINGAPORE': '🇸🇬',
+              'HONG KONG': '🇭🇰',
+              'SOUTH KOREA': '🇰🇷',
+              'BRAZIL': '🇧🇷',
+              'MEXICO': '🇲🇽',
+              'ARGENTINA': '🇦🇷',
+              'SOUTH AFRICA': '🇿🇦',
+              'RUSSIA': '🇷🇺',
+              'TURKEY': '🇹🇷',
+              'ISRAEL': '🇮🇱',
+              'UAE': '🇦🇪',
+              'SAUDI ARABIA': '🇸🇦'
+            };
+            return flagMap[countryUpper] || '🌍';
+          }
+          
+          function createOwnershipSVG(nodes, links) {
+            if (nodes.length === 0) return '<p class="text-gray-500">No ownership data</p>';
+            
+            // Calculate actual bounds of the tree
+            const minX = Math.min(...nodes.map(n => n.x)) - 100; // Left padding
+            const maxX = Math.max(...nodes.map(n => n.x)) + 100; // Right padding
+            const maxY = Math.max(...nodes.map(n => n.y)) + 100;
+            
+            // Shift all nodes to prevent cutoff (add 50px left margin)
+            const xOffset = minX < 50 ? 50 - minX : 0;
+            nodes.forEach(n => n.x += xOffset);
+            
+            // Calculate final SVG dimensions
+            const width = maxX - minX + xOffset + 100;
+            const height = Math.max(400, maxY + 150);  // Add 150px bottom margin to prevent cutoff
+            
+            const depthColors = [
+              '#1e40af', // blue-800 (root)
+              '#3b82f6', // blue-500
+              '#059669', // green-600
+              '#10b981', // green-500
+              '#f59e0b', // yellow-500
+              '#f97316', // orange-500
+              '#ef4444', // red-500
+              '#dc2626'  // red-600
+            ];
+            
+            let svg = '<svg width="' + width + '" height="' + height + '" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + width + ' ' + height + '" style="border: 1px solid #e5e7eb; border-radius: 8px; background: #ffffff; display: block; margin: 0 auto; max-width: 100%;">';
+            svg += '<defs>';
+            svg += '<marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#9ca3af" /></marker>';
+            svg += '<filter id="shadow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceAlpha" stdDeviation="3"/><feOffset dx="0" dy="2" result="offsetblur"/><feComponentTransfer><feFuncA type="linear" slope="0.2"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+            svg += '</defs>';
+            svg += '<g transform="scale(1)">';
+            
+            // Draw links first (so they appear behind nodes)
+            links.forEach(link => {
+              const source = nodes.find(n => n.id === link.source);
+              const target = nodes.find(n => n.id === link.target);
+              if (source && target) {
+                const sourceX = source.x;
+                const sourceY = source.y + 40; // Bottom of source box
+                const targetX = target.x;
+                const targetY = target.y - 10; // Top of target box
+                
+                // Draw curved line
+                const midY = (sourceY + targetY) / 2;
+                svg += '<path d="M ' + sourceX + ' ' + sourceY + ' C ' + sourceX + ' ' + midY + ', ' + targetX + ' ' + midY + ', ' + targetX + ' ' + targetY + '" stroke="#9ca3af" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>';
+                
+                // Add percentage label on link if available
+                // Always show label if percentageBand exists, or if percentage > 0
+                if (target.percentageBand || target.percentage > 0) {
+                  const labelX = (sourceX + targetX) / 2;
+                  const labelY = (sourceY + targetY) / 2 - 5;
+                  // Show percentage band if available (e.g., "75-100% voting rights"), otherwise exact percentage
+                  const label = target.percentageBand || (target.percentage.toFixed(1) + '%');
+                  svg += '<text x="' + labelX + '" y="' + labelY + '" text-anchor="middle" font-size="10" fill="#6b7280" font-weight="600">' + escapeXml(label) + '</text>';
+                }
+              }
+            });
+            
+            // Draw nodes
+            nodes.forEach(node => {
+              const color = depthColors[Math.min(node.depth, depthColors.length - 1)];
+              const fillColor = node.depth === 0 ? color : '#ffffff';
+              const strokeColor = color;
+              const textColor = node.depth === 0 ? '#ffffff' : '#1f2937';
+              
+              // Node box
+              svg += '<rect x="' + (node.x - 100) + '" y="' + (node.y - 35) + '" width="200" height="70" rx="8" ry="8" fill="' + fillColor + '" stroke="' + strokeColor + '" stroke-width="2" filter="url(#shadow)" style="cursor: pointer;"/>';
+              
+              // Company icon with country flag
+              const icon = node.isCompany ? '🏢' : '👤';
+              const flag = getCountryFlag(node.country);
+              
+              // DEBUG: Log country flag rendering
+              if (node.depth <= 2) {
+                console.log('[FLAG DEBUG] Node:', node.name, 'Country:', node.country, 'Flag:', flag, 'Has country:', !!node.country, 'Has flag:', !!flag);
+              }
+              
+              svg += '<text x="' + (node.x - 90) + '" y="' + (node.y - 10) + '" font-size="16">' + icon + '</text>';
+              if (flag && node.country) {
+                svg += '<text x="' + (node.x + 80) + '" y="' + (node.y - 10) + '" font-size="16" title="' + escapeXml(node.country) + '">' + flag + '</text>';
+              } else if (node.isCompany && !node.companyNumber) {
+                // Show question mark for non-UK companies (no UK company number)
+                svg += '<text x="' + (node.x + 80) + '" y="' + (node.y - 10) + '" font-size="16" title="Non-UK company (no UK company number)">❓</text>';
+              }
+              
+              // Company name with wrapping
+              const maxCharsPerLine = 20;
+              const words = node.name.split(' ');
+              let lines = [];
+              let currentLine = '';
+              
+              words.forEach(word => {
+                if ((currentLine + ' ' + word).length <= maxCharsPerLine) {
+                  currentLine = currentLine ? currentLine + ' ' + word : word;
+                } else {
+                  if (currentLine) lines.push(currentLine);
+                  currentLine = word;
+                }
+              });
+              if (currentLine) lines.push(currentLine);
+              
+              // Limit to 2 lines
+              if (lines.length > 2) {
+                lines[1] = lines[1].substring(0, maxCharsPerLine - 3) + '...';
+                lines = lines.slice(0, 2);
+              }
+              
+              // Render text with tspan for each line
+              const startY = node.y - 15 + (lines.length === 1 ? 5 : 0);
+              svg += '<text x="' + (node.x - 65) + '" y="' + startY + '" font-size="11" font-weight="600" fill="' + textColor + '">';
+              lines.forEach((line, idx) => {
+                svg += '<tspan x="' + (node.x - 65) + '" dy="' + (idx === 0 ? 0 : 12) + '">' + escapeXml(line) + '</tspan>';
+              });
+              svg += '</text>';
+              
+              // Company number
+              if (node.companyNumber) {
+                svg += '<text x="' + (node.x - 65) + '" y="' + (node.y + 5) + '" font-size="10" fill="' + (node.depth === 0 ? '#e5e7eb' : '#6b7280') + '">' + node.companyNumber + '</text>';
+              }
+              
+              // Shares info
+              if (node.shares > 0) {
+                const sharesText = node.shares.toLocaleString() + ' shares';
+                svg += '<text x="' + (node.x - 65) + '" y="' + (node.y + 20) + '" font-size="9" fill="' + (node.depth === 0 ? '#d1d5db' : '#9ca3af') + '">' + sharesText + '</text>';
+              }
+            });
+            
+            svg += '</g></svg>';
+            
+            return svg;
+          }
+          
+          function escapeXml(unsafe) {
+            if (typeof unsafe !== 'string') return '';
+            return unsafe.replace(/[<>&'"]/g, function (c) {
+              switch (c) {
+                case '<': return '&lt;';
+                case '>': return '&gt;';
+                case '&': return '&amp;';
+                case "'": return '&apos;';
+                case '"': return '&quot;';
+                default: return c;
+              }
+            });
           }
           
           function buildOwnershipTree(shareholders, companyName) {
@@ -1250,7 +1742,7 @@ app.get('/batch/:id', async (c) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Batch ${batchId} - Entity Validator</title>
+        <title>Batch ${batchId} - BOCVerify</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     </head>
@@ -1267,59 +1759,107 @@ app.get('/batch/:id', async (c) => {
             </h1>
 
             <div class="bg-white rounded-lg shadow p-6">
-                <p class="text-gray-600">Loading batch details...</p>
+                <div id="batch-loading" class="text-center py-8">
+                    <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
+                    <p class="text-gray-600">Loading batch details...</p>
+                </div>
                 <div id="batch-details"></div>
             </div>
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script>
+          const batchId = ${JSON.stringify(batchId)};
+          console.log('[BATCH] Page loaded, batch ID:', batchId);
+          
           async function loadBatchDetails() {
             try {
-              const response = await axios.get('/api/batch/${batchId}/items');
-              const items = response.data.items || [];
+              console.log('[BATCH] Fetching batch items...');
+              const response = await axios.get('/api/batch/' + batchId + '/items');
+              console.log('[BATCH] Response received:', response.status);
+              console.log('[BATCH] Data:', response.data);
               
-              document.getElementById('batch-details').innerHTML = \`
-                <h2 class="text-xl font-bold mb-4">Items (\${items.length})</h2>
-                <div class="overflow-x-auto">
-                  <table class="w-full">
-                    <thead class="bg-gray-50">
-                      <tr>
-                        <th class="px-4 py-2 text-left">Input Name</th>
-                        <th class="px-4 py-2 text-left">Matched Entity</th>
-                        <th class="px-4 py-2 text-left">Registry</th>
-                        <th class="px-4 py-2 text-left">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody class="divide-y">
-                      \${items.map(item => \`
-                        <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.location.href='/item/\${item.id}'">
-                          <td class="px-4 py-2">
-                            <a href="/item/\${item.id}" class="text-blue-600 hover:text-blue-800 hover:underline" onclick="event.stopPropagation()">
-                              \${item.input_name}
-                            </a>
-                          </td>
-                          <td class="px-4 py-2">\${item.company_number || item.charity_number || '-'}</td>
-                          <td class="px-4 py-2">\${item.resolved_registry || '-'}</td>
-                          <td class="px-4 py-2">
-                            <span class="badge \${item.enrich_status === 'done' ? 'badge-success' : item.enrich_status === 'running' ? 'badge-warning' : 'badge-secondary'}">
-                              \${item.enrich_status || 'pending'}
-                            </span>
-                          </td>
-                        </tr>
-                      \`).join('')}
-                    </tbody>
-                  </table>
-                </div>
-              \`;
+              const items = response.data.items || [];
+              console.log('[BATCH] Items count:', items.length);
+              
+              // Hide loading spinner
+              const loadingEl = document.getElementById('batch-loading');
+              if (loadingEl) loadingEl.style.display = 'none';
+              
+              if (items.length === 0) {
+                document.getElementById('batch-details').innerHTML = 
+                  '<div class="text-center py-8">' +
+                  '<i class="fas fa-inbox text-gray-400 text-5xl mb-4"></i>' +
+                  '<p class="text-gray-600">No items found in this batch</p>' +
+                  '</div>';
+                return;
+              }
+              
+              // Build table rows
+              const tableRows = items.map(item => {
+                const statusClass = 
+                  item.enrich_status === 'done' ? 'bg-green-100 text-green-800' : 
+                  item.enrich_status === 'running' ? 'bg-yellow-100 text-yellow-800' : 
+                  'bg-gray-100 text-gray-800';
+                
+                return '<tr class="hover:bg-gray-50">' +
+                  '<td class="px-4 py-2">' +
+                    '<a href="/item/' + item.id + '" class="text-blue-600 hover:text-blue-800 hover:underline font-medium">' +
+                      item.input_name +
+                    '</a>' +
+                  '</td>' +
+                  '<td class="px-4 py-2">' + (item.company_number || item.charity_number || '-') + '</td>' +
+                  '<td class="px-4 py-2">' + (item.resolved_registry || '-') + '</td>' +
+                  '<td class="px-4 py-2">' +
+                    '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ' + statusClass + '">' +
+                      (item.enrich_status || 'pending') +
+                    '</span>' +
+                  '</td>' +
+                  '<td class="px-4 py-2">' +
+                    '<a href="/item/' + item.id + '" class="text-blue-600 hover:text-blue-800 text-sm font-medium">' +
+                      'View Details <i class="fas fa-arrow-right ml-1"></i>' +
+                    '</a>' +
+                  '</td>' +
+                '</tr>';
+              }).join('');
+              
+              document.getElementById('batch-details').innerHTML = 
+                '<h2 class="text-xl font-bold mb-4">Items (' + items.length + ')</h2>' +
+                '<div class="overflow-x-auto">' +
+                  '<table class="w-full">' +
+                    '<thead class="bg-gray-50">' +
+                      '<tr>' +
+                        '<th class="px-4 py-2 text-left">Input Name</th>' +
+                        '<th class="px-4 py-2 text-left">Matched Entity</th>' +
+                        '<th class="px-4 py-2 text-left">Registry</th>' +
+                        '<th class="px-4 py-2 text-left">Status</th>' +
+                        '<th class="px-4 py-2 text-left">Actions</th>' +
+                      '</tr>' +
+                    '</thead>' +
+                    '<tbody class="divide-y">' +
+                      tableRows +
+                    '</tbody>' +
+                  '</table>' +
+                '</div>';
+              
+              console.log('[BATCH] Table rendered successfully');
             } catch (error) {
-              document.getElementById('batch-details').innerHTML = \`
-                <p class="text-red-600">Failed to load batch details: \${error.message}</p>
-              \`;
+              console.error('[BATCH] Error loading batch:', error);
+              document.getElementById('batch-details').innerHTML = 
+                '<div class="text-center py-8">' +
+                  '<i class="fas fa-exclamation-triangle text-red-500 text-5xl mb-4"></i>' +
+                  '<p class="text-red-600 font-semibold mb-2">Failed to load batch details</p>' +
+                  '<p class="text-gray-600 text-sm">' + error.message + '</p>' +
+                  '<button onclick="loadBatchDetails()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">' +
+                    '<i class="fas fa-redo mr-2"></i>Retry' +
+                  '</button>' +
+                '</div>';
             }
           }
 
+          // Start loading immediately
           loadBatchDetails();
+          console.log('[BATCH] loadBatchDetails() called');
         </script>
     </body>
     </html>
