@@ -243,3 +243,5 @@ For issues or questions:
 <!-- Environment variable updated: 2026-01-22 09:14:53 UTC -->
 
 <!-- Deployment triggered with updated environment variables: 2026-01-22 09:24:09 UTC -->
+
+<!-- Deployment after env var deletion: 2026-01-22 09:38:44 UTC -->
