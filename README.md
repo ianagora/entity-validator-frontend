@@ -241,3 +241,5 @@ For issues or questions:
 <!-- Deploy trigger: 1769028572 -->
 
 <!-- Environment variable updated: 2026-01-22 09:14:53 UTC -->
+
+<!-- Deployment triggered with updated environment variables: 2026-01-22 09:24:09 UTC -->
